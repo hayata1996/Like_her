@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./app/frontend:/app
+      - ./data:/data
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./app/api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app/api:/app
+      - ./data:/data
+    environment:
+      - MODEL_PATH=/data/models
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: ./app/scheduler
+      dockerfile: Dockerfile
+    volumes:
+      - ./app/scheduler:/app
+      - ./data:/data
+    depends_on:
+      - api
+    restart: unless-stopped

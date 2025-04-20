@@ -1,0 +1,153 @@
+provider "google" {
+  project = var.project_id
+  region  = var.region
+  zone    = var.zone
+}
+
+# Cloud Run service for API
+resource "google_cloud_run_service" "api" {
+  name     = "like-her-api"
+  location = var.region
+
+  template {
+    spec {
+      containers {
+        image = "gcr.io/${var.project_id}/like-her-api:latest"
+        
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "2Gi"
+          }
+        }
+        
+        env {
+          name  = "MODEL_PATH"
+          value = "/data/models"
+        }
+      }
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+}
+
+# Cloud Run service for Frontend
+resource "google_cloud_run_service" "frontend" {
+  name     = "like-her-frontend"
+  location = var.region
+
+  template {
+    spec {
+      containers {
+        image = "gcr.io/${var.project_id}/like-her-frontend:latest"
+        
+        resources {
+          limits = {
+            cpu    = "1000m"
+            memory = "1Gi"
+          }
+        }
+        
+        env {
+          name  = "API_URL"
+          value = google_cloud_run_service.api.status[0].url
+        }
+      }
+    }
+  }
+
+  traffic {
+    percent         = 100
+    latest_revision = true
+  }
+}
+
+# Cloud Scheduler for scheduled tasks
+resource "google_cloud_scheduler_job" "daily_news_job" {
+  name      = "daily-ai-news-job"
+  schedule  = "0 3 * * *"  # Run at 3 AM daily
+  time_zone = "Asia/Tokyo"
+
+  http_target {
+    uri         = "${google_cloud_run_service.api.status[0].url}/tasks/fetch-news"
+    http_method = "POST"
+  }
+}
+
+resource "google_cloud_scheduler_job" "weekly_papers_job" {
+  name      = "weekly-papers-job"
+  schedule  = "0 20 * * 5"  # Run at 8 PM on Fridays
+  time_zone = "Asia/Tokyo"
+
+  http_target {
+    uri         = "${google_cloud_run_service.api.status[0].url}/tasks/fetch-papers"
+    http_method = "POST"
+  }
+}
+
+# BigQuery dataset for data storage
+resource "google_bigquery_dataset" "like_her_dataset" {
+  dataset_id    = "like_her_dataset"
+  friendly_name = "Like Her Dataset"
+  location      = "asia-northeast1"
+}
+
+# BigQuery tables
+resource "google_bigquery_table" "health_data" {
+  dataset_id = google_bigquery_dataset.like_her_dataset.dataset_id
+  table_id   = "health_data"
+
+  schema = <<EOF
+[
+  {
+    "name": "timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "data_type",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "value",
+    "type": "FLOAT",
+    "mode": "REQUIRED"
+  }
+]
+EOF
+}
+
+resource "google_bigquery_table" "news_data" {
+  dataset_id = google_bigquery_dataset.like_her_dataset.dataset_id
+  table_id   = "news_data"
+
+  schema = <<EOF
+[
+  {
+    "name": "timestamp",
+    "type": "TIMESTAMP",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "title",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "content",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  },
+  {
+    "name": "source",
+    "type": "STRING",
+    "mode": "REQUIRED"
+  }
+]
+EOF
+}
