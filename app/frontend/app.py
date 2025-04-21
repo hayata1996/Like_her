@@ -6,13 +6,22 @@ import requests
 import os
 import time
 import json
-from streamlit_audiorecorder import audio_recorder
-from gtts import gTTS
 from io import BytesIO
-import speech_recognition as sr
 import base64
 from datetime import datetime
 import subprocess
+
+# Import streamlit_audiorecorder which is now successfully installed
+from streamlit_audiorecorder import audio_recorder
+AUDIO_RECORDER_AVAILABLE = True
+
+try:
+    from gtts import gTTS
+    import speech_recognition as sr
+    VOICE_PROCESSING_AVAILABLE = True
+except ImportError:
+    VOICE_PROCESSING_AVAILABLE = False
+    st.warning("Voice processing libraries (gTTS/speech_recognition) are not installed. Voice output will be disabled.")
 
 # Set page configuration
 st.set_page_config(
@@ -93,6 +102,9 @@ API_URL = os.environ.get("API_URL", "http://localhost:8000")
 
 # Function to autoplay audio
 def autoplay_audio(audio_data):
+    if not VOICE_PROCESSING_AVAILABLE:
+        return
+        
     b64 = base64.b64encode(audio_data).decode()
     md = f"""
         <audio autoplay>
@@ -103,6 +115,9 @@ def autoplay_audio(audio_data):
 
 # Function to convert text to speech
 def text_to_speech(text):
+    if not VOICE_PROCESSING_AVAILABLE:
+        return None
+        
     tts = gTTS(text=text, lang='en', slow=False)
     fp = BytesIO()
     tts.write_to_fp(fp)
@@ -126,6 +141,9 @@ def display_terminal():
 
 # Function for speech recognition
 def speech_to_text(audio_data):
+    if not VOICE_PROCESSING_AVAILABLE:
+        return None
+        
     r = sr.Recognizer()
     try:
         with sr.AudioFile(audio_data) as source:
@@ -194,9 +212,11 @@ def chat_with_ai(input_text):
         # Add AI response to conversation
         st.session_state.conversation.append({"role": "assistant", "content": response_text})
         
-        # Convert AI response to speech and play it
-        audio_data = text_to_speech(response_text.replace('[', '').replace(']', ''))
-        autoplay_audio(audio_data)
+        # Convert AI response to speech and play it if voice processing is available
+        if VOICE_PROCESSING_AVAILABLE:
+            audio_data = text_to_speech(response_text.replace('[', '').replace(']', ''))
+            if audio_data:
+                autoplay_audio(audio_data)
         
     except Exception as e:
         error_message = f"[{current_time}] Error: Could not process your request. {str(e)}"
@@ -236,27 +256,30 @@ with col1:
     # Text input for chat
     user_input = st.text_input("Enter your message:", key="user_input")
     
-    # Voice input button
+    # Voice input using streamlit_audiorecorder
     st.write("Or record your voice:")
     audio_bytes = audio_recorder(pause_threshold=2.0, sample_rate=16000)
     
-    if user_input:
-        chat_with_ai(user_input)
-        # Clear the input box
-        st.experimental_rerun()
-        
     if audio_bytes:
         # Save audio to temporary file for speech recognition
         with open("temp_audio.wav", "wb") as f:
             f.write(audio_bytes)
         
         # Convert speech to text
-        speech_text = speech_to_text("temp_audio.wav")
-        
-        if speech_text:
-            chat_with_ai(speech_text)
-            # Clear the input
-            st.experimental_rerun()
+        if VOICE_PROCESSING_AVAILABLE:
+            speech_text = speech_to_text("temp_audio.wav")
+            
+            if speech_text:
+                chat_with_ai(speech_text)
+                # Clear the input
+                st.experimental_rerun()
+        else:
+            st.warning("Voice recording is available, but speech recognition is not. Install speech_recognition to enable this feature.")
+    
+    if user_input:
+        chat_with_ai(user_input)
+        # Clear the input box
+        st.experimental_rerun()
 
 with col2:
     # AI News section
