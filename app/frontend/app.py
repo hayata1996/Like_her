@@ -11,17 +11,8 @@ import base64
 from datetime import datetime
 import subprocess
 
-# Import streamlit_audiorecorder which is now successfully installed
-from streamlit_audiorecorder import audio_recorder
-AUDIO_RECORDER_AVAILABLE = True
-
-try:
-    from gtts import gTTS
-    import speech_recognition as sr
-    VOICE_PROCESSING_AVAILABLE = True
-except ImportError:
-    VOICE_PROCESSING_AVAILABLE = False
-    st.warning("Voice processing libraries (gTTS/speech_recognition) are not installed. Voice output will be disabled.")
+# No speech processing libraries needed - using Gemini API instead
+VOICE_FEATURES_ENABLED = True
 
 # Set page configuration
 st.set_page_config(
@@ -102,7 +93,7 @@ API_URL = os.environ.get("API_URL", "http://localhost:8000")
 
 # Function to autoplay audio
 def autoplay_audio(audio_data):
-    if not VOICE_PROCESSING_AVAILABLE:
+    if not VOICE_FEATURES_ENABLED:
         return
         
     b64 = base64.b64encode(audio_data).decode()
@@ -113,16 +104,10 @@ def autoplay_audio(audio_data):
     """
     st.markdown(md, unsafe_allow_html=True)
 
-# Function to convert text to speech
+# Function to convert text to speech (placeholder - not using gTTS anymore)
 def text_to_speech(text):
-    if not VOICE_PROCESSING_AVAILABLE:
-        return None
-        
-    tts = gTTS(text=text, lang='en', slow=False)
-    fp = BytesIO()
-    tts.write_to_fp(fp)
-    fp.seek(0)
-    return fp.read()
+    # We're not using gTTS anymore, so just return None
+    return None
 
 # Function to display terminal-like text
 def display_terminal():
@@ -139,20 +124,10 @@ def display_terminal():
     terminal_html += "</div>"
     st.markdown(terminal_html, unsafe_allow_html=True)
 
-# Function for speech recognition
+# Function for speech recognition (placeholder - no longer using speech_recognition)
 def speech_to_text(audio_data):
-    if not VOICE_PROCESSING_AVAILABLE:
-        return None
-        
-    r = sr.Recognizer()
-    try:
-        with sr.AudioFile(audio_data) as source:
-            audio = r.record(source)  # read the entire audio file
-            text = r.recognize_google(audio)
-            return text
-    except Exception as e:
-        st.error(f"Error in speech recognition: {e}")
-        return None
+    # We're not using speech_recognition anymore, so just return None
+    return None
 
 # Function to get stock data (placeholder with random data for now)
 def get_stock_data():
@@ -212,12 +187,6 @@ def chat_with_ai(input_text):
         # Add AI response to conversation
         st.session_state.conversation.append({"role": "assistant", "content": response_text})
         
-        # Convert AI response to speech and play it if voice processing is available
-        if VOICE_PROCESSING_AVAILABLE:
-            audio_data = text_to_speech(response_text.replace('[', '').replace(']', ''))
-            if audio_data:
-                autoplay_audio(audio_data)
-        
     except Exception as e:
         error_message = f"[{current_time}] Error: Could not process your request. {str(e)}"
         st.session_state.conversation.append({"role": "assistant", "content": error_message})
@@ -247,7 +216,7 @@ def get_ai_news():
 st.title("Like Her - Your Personal AI Assistant")
 
 # Create two columns for the layout
-col1, col2 = st.columns([3, 1])
+col1, col2 = st.columns([1, 1])
 
 with col1:
     # Display the terminal-like conversation interface
@@ -256,30 +225,33 @@ with col1:
     # Text input for chat
     user_input = st.text_input("Enter your message:", key="user_input")
     
-    # Voice input using streamlit_audiorecorder
+    # Voice input using native st.audio_input
     st.write("Or record your voice:")
-    audio_bytes = audio_recorder(pause_threshold=2.0, sample_rate=16000)
+    audio_bytes = st.audio_input("Record your voice")
     
     if audio_bytes:
-        # Save audio to temporary file for speech recognition
-        with open("temp_audio.wav", "wb") as f:
-            f.write(audio_bytes)
+        # Save audio as mp3 file for sending to Gemini API
+        temp_file_path = "temp_audio.mp3"
+        # Read the data from the UploadedFile object before writing to file
+        with open(temp_file_path, "wb") as f:
+            f.write(audio_bytes.getvalue())
         
-        # Convert speech to text
-        if VOICE_PROCESSING_AVAILABLE:
-            speech_text = speech_to_text("temp_audio.wav")
-            
-            if speech_text:
-                chat_with_ai(speech_text)
-                # Clear the input
-                st.experimental_rerun()
-        else:
-            st.warning("Voice recording is available, but speech recognition is not. Install speech_recognition to enable this feature.")
+        # Here you would send the audio file to Gemini API
+        # For now, just display a message
+        st.info(f"Audio saved to {temp_file_path}. Ready to send to Gemini API.")
+        
+        # TODO: Implement the Gemini API call here
+        # Example pseudocode:
+        # response = send_audio_to_gemini_api(temp_file_path)
+        # if response:
+        #     chat_with_ai(response["transcription"])
+        #     # Clear the input
+        #     st.rerun()
     
     if user_input:
         chat_with_ai(user_input)
         # Clear the input box
-        st.experimental_rerun()
+        st.rerun()
 
 with col2:
     # AI News section
