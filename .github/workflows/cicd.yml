@@ -1,0 +1,62 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+
+    - name: Configure Docker for GCR
+      run: gcloud auth configure-docker gcr.io
+
+    # Building and pushing API container
+    - name: Build API container
+      run: |
+        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-api:latest ./app/api
+        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-api:latest
+
+    # Building and pushing Frontend container
+    - name: Build Frontend container
+      run: |
+        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-frontend:latest ./app/frontend
+        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-frontend:latest
+
+    # Building and pushing Scheduler container
+    - name: Build Scheduler container
+      run: |
+        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-scheduler:latest ./app/scheduler
+        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-scheduler:latest
+
+    # Deploying to Cloud Run
+    - name: Deploy API to Cloud Run
+      run: |
+        gcloud run deploy like-her-api \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-api:latest \
+          --platform managed \
+          --region asia-northeast1 \
+          --allow-unauthenticated
+
+    - name: Deploy Frontend to Cloud Run
+      run: |
+        gcloud run deploy like-her-frontend \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-frontend:latest \
+          --platform managed \
+          --region asia-northeast1 \
+          --allow-unauthenticated \
+          --set-env-vars="API_URL=$(gcloud run services describe like-her-api --platform managed --region asia-northeast1 --format='value(status.url)')"
