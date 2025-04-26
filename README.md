@@ -2,6 +2,8 @@
 
 A personal AI assistant inspired by the movie "Her" (2013), designed for the Google Cloud Japan AI Hackathon Vol.2.
 
+**Last updated: April 26, 2025**
+
 ## Project Overview
 
 This project creates a human-like voice assistant that:
