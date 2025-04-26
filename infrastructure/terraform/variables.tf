@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "Google Cloud プロジェクトID"
   type        = string
-  default     = "like-her-project" # ここに実際のプロジェクトIDを入力してください
+  default     = "433235895318" # Your actual GCP project ID
 }
 
 variable "region" {
