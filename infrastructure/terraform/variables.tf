@@ -1,6 +1,7 @@
 variable "project_id" {
-  description = "Google Cloud Project ID"
+  description = "Google Cloud プロジェクトID"
   type        = string
+  default     = "like-her-project" # Please replace with your actual GCP project ID before deployment
 }
 
 variable "region" {

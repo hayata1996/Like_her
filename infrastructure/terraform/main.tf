@@ -4,6 +4,21 @@ provider "google" {
   zone    = var.zone
 }
 
+# Secret Manager for storing sensitive data
+resource "google_secret_manager_secret" "gemini_api_key" {
+  secret_id = "gemini-api-key"
+  replication {
+    automatic = true
+  }
+}
+
+# Allow Cloud Run service to access the secret
+resource "google_secret_manager_secret_iam_member" "api_gemini_access" {
+  secret_id = google_secret_manager_secret.gemini_api_key.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${var.project_id}@appspot.gserviceaccount.com"
+}
+
 # Cloud Run service for API
 resource "google_cloud_run_service" "api" {
   name     = "like-her-api"
@@ -24,6 +39,16 @@ resource "google_cloud_run_service" "api" {
         env {
           name  = "MODEL_PATH"
           value = "/data/models"
+        }
+
+        env {
+          name = "GEMINI_API_KEY"
+          value_from {
+            secret_key_ref {
+              name = google_secret_manager_secret.gemini_api_key.secret_id
+              key  = "latest"
+            }
+          }
         }
       }
     }
