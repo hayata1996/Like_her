@@ -30,6 +30,15 @@ jobs:
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
 
+    # Enable necessary APIs
+    - name: Enable APIs
+      run: |
+        gcloud services enable artifactregistry.googleapis.com
+        gcloud services enable run.googleapis.com
+        gcloud services enable bigquery.googleapis.com
+        gcloud services enable cloudscheduler.googleapis.com
+        gcloud services enable secretmanager.googleapis.com
+
     # Configure Docker for GCR
     - name: Configure Docker
       run: |
@@ -81,7 +90,8 @@ jobs:
           --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-api:latest \
           --platform managed \
           --region asia-northeast1 \
-          --allow-unauthenticated
+          --allow-unauthenticated \
+          --service-account=admin-for-like-her@for-like-her.iam.gserviceaccount.com
 
     - name: Deploy Frontend to Cloud Run
       run: |
@@ -90,4 +100,5 @@ jobs:
           --platform managed \
           --region asia-northeast1 \
           --allow-unauthenticated \
+          --service-account=admin-for-like-her@for-like-her.iam.gserviceaccount.com \
           --set-env-vars="API_URL=$(gcloud run services describe like-her-api --platform managed --region asia-northeast1 --format='value(status.url)')"

@@ -21,7 +21,8 @@ resource "google_secret_manager_secret" "gemini_api_key" {
 resource "google_secret_manager_secret_iam_member" "api_gemini_access" {
   secret_id = google_secret_manager_secret.gemini_api_key.id
   role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${var.project_id}@appspot.gserviceaccount.com"
+  # Use the admin-for-like-her service account
+  member    = "serviceAccount:admin-for-like-her@for-like-her.iam.gserviceaccount.com"
 }
 
 # Cloud Run service for API
@@ -31,6 +32,7 @@ resource "google_cloud_run_service" "api" {
 
   template {
     spec {
+      service_account_name = "admin-for-like-her@for-like-her.iam.gserviceaccount.com"
       containers {
         image = "gcr.io/${var.project_id}/like-her-api:latest"
         
@@ -72,6 +74,7 @@ resource "google_cloud_run_service" "frontend" {
 
   template {
     spec {
+      service_account_name = "admin-for-like-her@for-like-her.iam.gserviceaccount.com"
       containers {
         image = "gcr.io/${var.project_id}/like-her-frontend:latest"
         
