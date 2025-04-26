@@ -4,18 +4,12 @@ provider "google" {
   zone    = var.zone
 }
 
-# Secret Manager for storing sensitive data - using values from GitHub Actions secrets
+# Secret Manager for storing sensitive data - just create the secret without initial value
 resource "google_secret_manager_secret" "gemini_api_key" {
   secret_id = "gemini-api-key"
   replication {
     automatic = true
   }
-}
-
-# This version will be created during deployment from GitHub Actions secrets
-resource "google_secret_manager_secret_version" "gemini_api_key_version" {
-  secret      = google_secret_manager_secret.gemini_api_key.id
-  secret_data = var.gemini_api_key
 }
 
 # Allow Cloud Run service to access the secret

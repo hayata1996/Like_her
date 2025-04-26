@@ -55,13 +55,12 @@ jobs:
         cd infrastructure/terraform
         terraform init
 
-    # Apply Terraform with secrets passed as variables
+    # Apply Terraform with project_id
     - name: Terraform Apply
       run: |
         cd infrastructure/terraform
         terraform apply -auto-approve \
-          -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
-          -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}"
+          -var "project_id=${{ secrets.GCP_PROJECT_ID }}"
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
 
