@@ -1,16 +1,17 @@
 variable "project_id" {
-  description = "Google Cloud Project ID"
+  description = "Google Cloud プロジェクトID"
   type        = string
+  default     = "like-her-project" # ここに実際のプロジェクトIDを入力してください
 }
 
 variable "region" {
-  description = "Google Cloud region"
+  description = "デプロイするリージョン"
   type        = string
-  default     = "asia-northeast1"  # Tokyo region
+  default     = "asia-northeast1" # 東京リージョン
 }
 
 variable "zone" {
-  description = "Google Cloud zone"
+  description = "デプロイするゾーン"
   type        = string
-  default     = "asia-northeast1-a"
+  default     = "asia-northeast1-a" # 東京リージョンのゾーン
 }
