@@ -7,8 +7,13 @@ provider "google" {
 # Secret Manager for storing sensitive data - just create the secret without initial value
 resource "google_secret_manager_secret" "gemini_api_key" {
   secret_id = "gemini-api-key"
+  
   replication {
-    automatic = true
+    user_managed {
+      replicas {
+        location = "us-central1"
+      }
+    }
   }
 }
 
