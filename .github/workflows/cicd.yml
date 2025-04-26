@@ -43,6 +43,28 @@ jobs:
         docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-scheduler:latest ./app/scheduler
         docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-scheduler:latest
 
+    # Set up Terraform
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.5.7
+
+    # Initialize Terraform
+    - name: Terraform Init
+      run: |
+        cd infrastructure/terraform
+        terraform init
+
+    # Apply Terraform with secrets passed as variables
+    - name: Terraform Apply
+      run: |
+        cd infrastructure/terraform
+        terraform apply -auto-approve \
+          -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
+          -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}"
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+
     # Deploying to Cloud Run
     - name: Deploy API to Cloud Run
       run: |
