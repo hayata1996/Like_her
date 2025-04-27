@@ -4,7 +4,7 @@ provider "google" {
   zone    = var.zone
 }
 
-# Secret Manager for storing sensitive data - just create the secret without initial value
+# Secret Manager for storing sensitive data
 resource "google_secret_manager_secret" "gemini_api_key" {
   secret_id = "gemini-api-key"
   
@@ -15,12 +15,23 @@ resource "google_secret_manager_secret" "gemini_api_key" {
       }
     }
   }
+
+  lifecycle {
+    ignore_changes = [
+      replication,
+    ]
+    prevent_destroy = true
+  }
 }
 
 # Create a secret version with the Gemini API key
 resource "google_secret_manager_secret_version" "gemini_api_key_version" {
   secret      = google_secret_manager_secret.gemini_api_key.id
   secret_data = var.gemini_api_key
+
+  lifecycle {
+    prevent_destroy = false
+  }
 }
 
 # Allow Cloud Run service to access the secret
@@ -133,6 +144,15 @@ resource "google_bigquery_dataset" "like_her_dataset" {
   dataset_id    = "like_her_dataset"
   friendly_name = "Like Her Dataset"
   location      = "asia-northeast1"
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes = [
+      # Ignore changes to labels, etc.
+      labels,
+      default_table_expiration_ms,
+    ]
+  }
 }
 
 # BigQuery tables
@@ -159,6 +179,13 @@ resource "google_bigquery_table" "health_data" {
   }
 ]
 EOF
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes = [
+      schema,
+    ]
+  }
 }
 
 resource "google_bigquery_table" "news_data" {
@@ -189,4 +216,11 @@ resource "google_bigquery_table" "news_data" {
   }
 ]
 EOF
+
+  lifecycle {
+    prevent_destroy = true
+    ignore_changes = [
+      schema,
+    ]
+  }
 }
