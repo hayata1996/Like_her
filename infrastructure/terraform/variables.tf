@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "Google Cloud プロジェクトID"
   type        = string
-  default     = "" # Your actual GCP project ID
+  default     = "433235895318" # Your actual GCP project ID
 }
 
 variable "region" {
@@ -21,4 +21,10 @@ variable "gemini_api_key" {
   type        = string
   sensitive   = true
   # No default value as this will be provided by GitHub Actions
+}
+
+variable "agent_id" {
+  description = "AI Builder Agent ID"
+  type        = string
+  # This will be provided by GitHub Actions or terraform.tfvars
 }

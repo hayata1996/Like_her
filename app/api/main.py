@@ -13,6 +13,11 @@ from typing import List, Dict, Any, Optional
 import random
 import time
 
+# Import Google AI Builder client libraries
+from google.cloud import aiplatform
+from google.cloud.aiplatform.agents import AgentServiceClient
+from google.cloud.aiplatform.agents import Agent
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -32,6 +37,15 @@ app.add_middleware(
 # Base directory for data storage
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 MODEL_PATH = os.environ.get("MODEL_PATH", "/data/models")
+
+# AI Builder agent configuration
+PROJECT_ID = os.environ.get("PROJECT_ID")
+LOCATION = os.environ.get("LOCATION", "us-central1")
+AGENT_ID = os.environ.get("AGENT_ID")  # The ID of your created agent in AI Builder
+
+# Initialize AI Builder agent client
+aiplatform.init(project=PROJECT_ID, location=LOCATION)
+agent_client = AgentServiceClient()
 
 # Ensure data directories exist
 os.makedirs(f"{DATA_DIR}/news", exist_ok=True)
@@ -61,23 +75,36 @@ class HealthData(BaseModel):
     heart_rate: int
     last_sync: str
 
-# Mock LLM response function
-# In production, this would use the Swallow1.5 model
+# AI Builder agent interaction function
 def get_llm_response(message: str, user_id: str) -> str:
-    # This is a mock function - in production this would call your LLM
-    responses = [
-        f"I understand you're saying '{message}'. How can I help you further?",
-        f"That's interesting about '{message}'. Let me think about that.",
-        f"I see you mentioned '{message}'. Would you like to know more about this topic?",
-        f"Regarding '{message}', I have some thoughts that might help you.",
-        f"I've processed your message about '{message}'. Here's what I think..."
-    ]
-    
-    # Simulate processing time
-    time.sleep(1)
-    
-    current_time = datetime.now().strftime("%H:%M:%S")
-    return f"[{current_time}] {random.choice(responses)}"
+    """Get response from AI Builder agent instead of direct Gemini API or mock"""
+    try:
+        # Format the agent resource name
+        agent_name = f"projects/{PROJECT_ID}/locations/{LOCATION}/agents/{AGENT_ID}"
+        
+        # Create a session for this user if needed (in production, would store/retrieve session IDs)
+        session_id = f"session-{user_id}-{datetime.now().strftime('%Y%m%d')}"
+        session = f"{agent_name}/sessions/{session_id}"
+        
+        # Send the message to the AI Builder agent
+        response = agent_client.converse_agent(
+            agent=agent_name,
+            session=session,
+            message=message
+        )
+        
+        # Extract the response text
+        agent_response = response.reply.message.content
+        
+        # Log any tools that were called
+        if response.reply.tool_calls:
+            logger.info(f"Agent used {len(response.reply.tool_calls)} tools")
+            
+        return agent_response
+    except Exception as e:
+        logger.error(f"Error calling AI Builder agent: {str(e)}")
+        # Fallback to a basic response in case of error
+        return f"I'm sorry, I encountered an issue processing your request: {str(e)}"
 
 # API Routes
 @app.get("/")

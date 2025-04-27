@@ -77,13 +77,14 @@ jobs:
         terraform import google_secret_manager_secret.gemini_api_key projects/${{ secrets.GCP_PROJECT_ID }}/secrets/gemini-api-key || true
         terraform import google_bigquery_dataset.like_her_dataset projects/${{ secrets.GCP_PROJECT_ID }}/datasets/like_her_dataset || true
 
-    # Apply Terraform with project_id and Gemini API key
+    # Apply Terraform with project_id, Gemini API key, and AI Builder agent ID
     - name: Terraform Apply
       run: |
         cd infrastructure/terraform
         terraform apply -auto-approve \
           -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
-          -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}"
+          -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}" \
+          -var "agent_id=${{ secrets.AGENT_ID }}"
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
 

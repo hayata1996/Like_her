@@ -24,15 +24,6 @@ resource "google_secret_manager_secret" "gemini_api_key" {
   }
 }
 
-# Create a secret version with the Gemini API key
-resource "google_secret_manager_secret_version" "gemini_api_key_version" {
-  secret      = google_secret_manager_secret.gemini_api_key.id
-  secret_data = var.gemini_api_key
-
-  lifecycle {
-    prevent_destroy = false
-  }
-}
 
 # Allow Cloud Run service to access the secret
 resource "google_secret_manager_secret_iam_member" "api_gemini_access" {
@@ -64,15 +55,21 @@ resource "google_cloud_run_service" "api" {
           name  = "MODEL_PATH"
           value = "/data/models"
         }
-
+        
+        # Add AI Builder environment variables instead of Gemini
         env {
-          name = "GEMINI_API_KEY"
-          value_from {
-            secret_key_ref {
-              name = google_secret_manager_secret.gemini_api_key.secret_id
-              key  = "latest"
-            }
-          }
+          name  = "PROJECT_ID"
+          value = var.project_id
+        }
+        
+        env {
+          name  = "LOCATION"
+          value = "us-central1"  # AI Builder's primary region
+        }
+        
+        env {
+          name  = "AGENT_ID"
+          value = var.agent_id  # The ID of your AI Builder agent
         }
       }
     }
