@@ -68,11 +68,14 @@ jobs:
       with:
         terraform_version: 1.5.7
 
-    # Initialize Terraform
-    - name: Terraform Init
+    # Initialize Terraform and import existing resources
+    - name: Terraform Init and Import
       run: |
         cd infrastructure/terraform
         terraform init
+        # Try to import resources (may fail if not exist, that's OK)
+        terraform import google_secret_manager_secret.gemini_api_key projects/${{ secrets.GCP_PROJECT_ID }}/secrets/gemini-api-key || true
+        terraform import google_bigquery_dataset.like_her_dataset projects/${{ secrets.GCP_PROJECT_ID }}/datasets/like_her_dataset || true
 
     # Apply Terraform with project_id and Gemini API key
     - name: Terraform Apply
