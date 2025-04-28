@@ -1,3 +1,12 @@
+terraform {
+  cloud {
+    organization = "org_for_like-her"  # Update this to your actual Terraform Cloud organization name
+    workspaces {
+      name = "like-her"
+    }
+  }
+}
+
 provider "google" {
   project = var.project_id
   region  = var.region
