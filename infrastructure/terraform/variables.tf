@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "Google Cloud プロジェクトID"
   type        = string
-  default     = "433235895318" # Your actual GCP project ID
+  default     = " " # Your actual GCP project ID
 }
 
 variable "region" {
@@ -27,4 +27,11 @@ variable "agent_id" {
   description = "AI Builder Agent ID"
   type        = string
   default     = "placeholder-agent-id" # Temporary placeholder until you create an agent
+}
+
+variable "google_credentials" {
+  description = "Google Cloud Service Account credentials JSON"
+  type        = string
+  sensitive   = true
+  # No default - will be provided by GitHub Actions
 }

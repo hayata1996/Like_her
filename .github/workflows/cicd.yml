@@ -92,14 +92,15 @@ jobs:
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
 
-    # Apply Terraform with project_id, Gemini API key, and AI Builder agent ID
+    # Apply Terraform with project_id, Gemini API key, AI Builder agent ID, and Google credentials
     - name: Terraform Apply
       run: |
         cd infrastructure/terraform
         terraform apply -auto-approve \
           -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
           -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}" \
-          -var "agent_id=${{ secrets.AGENT_ID }}"
+          -var "agent_id=${{ secrets.AGENT_ID }}" \
+          -var "google_credentials=${{ secrets.GCP_SA_KEY }}"
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
 
