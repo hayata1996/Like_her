@@ -18,8 +18,11 @@ COPY . .
 # Create directory for models if it doesn't exist
 RUN mkdir -p /data/models
 
-# Expose the port
-EXPOSE 8000
+# Use the PORT environment variable provided by Cloud Run
+ENV PORT 8080
 
-# Run the API server
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Expose the port
+EXPOSE ${PORT}
+
+# Run the API server with the PORT environment variable
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT}
