@@ -28,3 +28,9 @@ variable "agent_id" {
   type        = string
   default     = "placeholder-agent-id" # Temporary placeholder until you create an agent
 }
+
+variable "google_credentials" {
+  description = "Google Cloud credentials JSON"
+  type        = string
+  sensitive   = true
+}
