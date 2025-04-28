@@ -18,11 +18,14 @@ COPY . .
 # Create directory for models if it doesn't exist
 RUN mkdir -p /data/models
 
-# Use the PORT environment variable provided by Cloud Run
-ENV PORT 8080
+# Set environment variables for local development
+ENV PORT=8000
+ENV PYTHONUNBUFFERED=1
+ENV USE_MOCK_RESPONSES=true
+ENV ENVIRONMENT=local
 
 # Expose the port
 EXPOSE ${PORT}
 
-# Run the API server with Python directly to use the __main__ block
-CMD python main.py
+# Run the API server
+CMD python -u main.py

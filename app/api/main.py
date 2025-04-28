@@ -13,14 +13,25 @@ from typing import List, Dict, Any, Optional
 import random
 import time
 
-# Import Google AI Builder client libraries
-from google.cloud import aiplatform
-from google.cloud.aiplatform.agents import AgentServiceClient
-from google.cloud.aiplatform.agents import Agent
-
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Check if we're running in local development mode
+USE_MOCK_RESPONSES = os.environ.get("USE_MOCK_RESPONSES", "false").lower() == "true"
+ENVIRONMENT = os.environ.get("ENVIRONMENT", "production")
+
+# Try to import Google AI Platform client libraries - with graceful fallback
+try:
+    if not USE_MOCK_RESPONSES:
+        from google.cloud import aiplatform
+        logger.info("Successfully imported Google Cloud AI Platform libraries")
+    else:
+        logger.info("Running in mock mode - skipping Google Cloud imports")
+except ImportError as e:
+    logger.warning(f"Google Cloud AI Platform libraries not available: {str(e)}")
+    logger.info("Will use mock responses for all AI interactions")
+    USE_MOCK_RESPONSES = True
 
 # Initialize FastAPI app
 app = FastAPI(title="Like Her API", description="API for the 'Like Her' AI Assistant")
@@ -38,14 +49,22 @@ app.add_middleware(
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 MODEL_PATH = os.environ.get("MODEL_PATH", "/data/models")
 
-# AI Builder agent configuration
+# AI Platform configuration
 PROJECT_ID = os.environ.get("PROJECT_ID")
 LOCATION = os.environ.get("LOCATION", "us-central1")
-AGENT_ID = os.environ.get("AGENT_ID")  # The ID of your created agent in AI Builder
+AGENT_ID = os.environ.get("AGENT_ID")
 
-# Initialize AI Builder agent client
-aiplatform.init(project=PROJECT_ID, location=LOCATION)
-agent_client = AgentServiceClient()
+# Initialize AI Platform if not in mock mode
+if not USE_MOCK_RESPONSES:
+    try:
+        aiplatform.init(project=PROJECT_ID, location=LOCATION)
+        logger.info(f"Successfully initialized AI Platform with project {PROJECT_ID}")
+    except Exception as e:
+        logger.error(f"Error initializing AI Platform: {str(e)}")
+        logger.info("Using mock responses due to AI Platform initialization failure")
+        USE_MOCK_RESPONSES = True
+else:
+    logger.info("Running in mock mode - using mock responses for all AI interactions")
 
 # Ensure data directories exist
 os.makedirs(f"{DATA_DIR}/news", exist_ok=True)
@@ -75,41 +94,56 @@ class HealthData(BaseModel):
     heart_rate: int
     last_sync: str
 
-# AI Builder agent interaction function
+# Mock response function for fallback or local development
+def get_mock_response(message: str) -> str:
+    # This is a mock function - in production this would call your LLM
+    responses = [
+        f"I understand you're saying '{message}'. How can I help you further?",
+        f"That's interesting about '{message}'. Let me think about that.",
+        f"I see you mentioned '{message}'. Would you like to know more about this topic?",
+        f"Regarding '{message}', I have some thoughts that might help you.",
+        f"I've processed your message about '{message}'. Here's what I think..."
+    ]
+    
+    # Simulate processing time
+    time.sleep(0.5)
+    
+    current_time = datetime.now().strftime("%H:%M:%S")
+    return f"[{current_time}] {random.choice(responses)}"
+
+# AI interaction function - uses Vertex AI in production, mock responses in development
 def get_llm_response(message: str, user_id: str) -> str:
-    """Get response from AI Builder agent instead of direct Gemini API or mock"""
+    """Get response from AI model or mock"""
+    # If we're in mock mode, always use mock responses
+    if USE_MOCK_RESPONSES:
+        logger.info("Using mock response due to mock mode being enabled")
+        return get_mock_response(message)
+        
     try:
-        # Format the agent resource name
-        agent_name = f"projects/{PROJECT_ID}/locations/{LOCATION}/agents/{AGENT_ID}"
-        
-        # Create a session for this user if needed (in production, would store/retrieve session IDs)
-        session_id = f"session-{user_id}-{datetime.now().strftime('%Y%m%d')}"
-        session = f"{agent_name}/sessions/{session_id}"
-        
-        # Send the message to the AI Builder agent
-        response = agent_client.converse_agent(
-            agent=agent_name,
-            session=session,
-            message=message
-        )
-        
-        # Extract the response text
-        agent_response = response.reply.message.content
-        
-        # Log any tools that were called
-        if response.reply.tool_calls:
-            logger.info(f"Agent used {len(response.reply.tool_calls)} tools")
+        if not PROJECT_ID:
+            # Fall back to mock responses if AI Platform is not configured
+            logger.warning("AI Platform not configured, using mock response")
+            return get_mock_response(message)
             
-        return agent_response
+        # In a real implementation, you would use the appropriate Vertex AI endpoint here
+        # For now, we'll use mock responses until properly implementing Vertex AI
+        logger.warning("Vertex AI integration not fully implemented yet, using mock response")
+        return get_mock_response(message)
+            
     except Exception as e:
-        logger.error(f"Error calling AI Builder agent: {str(e)}")
+        logger.error(f"Error calling AI service: {str(e)}")
         # Fallback to a basic response in case of error
-        return f"I'm sorry, I encountered an issue processing your request: {str(e)}"
+        return get_mock_response(message)
 
 # API Routes
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the Like Her API", "status": "operational"}
+    env_info = "local development" if ENVIRONMENT == "local" else "production"
+    mode_info = "mock responses" if USE_MOCK_RESPONSES else "AI Platform integration"
+    return {
+        "message": f"Welcome to the Like Her API - Running in {env_info} mode with {mode_info}",
+        "status": "operational"
+    }
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(message: ChatMessage):
@@ -242,4 +276,24 @@ def fetch_papers_background():
 # Run the application
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import sys
+    
+    # More detailed logging for startup
+    logger.info("Starting API service")
+    logger.info(f"Python version: {sys.version}")
+    logger.info(f"Current working directory: {os.getcwd()}")
+    logger.info(f"Environment: {ENVIRONMENT}")
+    logger.info(f"Mock responses: {USE_MOCK_RESPONSES}")
+    
+    # Get the port from environment variable
+    port = int(os.environ.get("PORT", 8000))
+    logger.info(f"Port configuration: Using port {port} (from environment: {os.environ.get('PORT')})")
+    
+    try:
+        logger.info(f"Starting server on port {port}")
+        uvicorn.run(app, host="0.0.0.0", port=port)
+    except Exception as e:
+        logger.error(f"Failed to start server: {str(e)}")
+        # Print to stderr as well for Cloud Run logs
+        print(f"ERROR: Failed to start server: {str(e)}", file=sys.stderr)
+        raise

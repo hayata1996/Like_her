@@ -1,0 +1,53 @@
+
+# Application Architecture Diagram for Like_her
+# ----------------------------------------------
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           HOST MACHINE                                  │
+│                                                                         │
+│    ┌───────────────┐        ┌───────────────┐                           │
+│    │ localhost:8501│───────▶│ localhost:8000│                           │
+│    └───────────────┘        └───────────────┘                           │
+│           │                         │                                    │
+└───────────┼─────────────────────────┼────────────────────────────────────┘
+            │                         │
+            ▼                         ▼
+┌───────────────────────┐   ┌───────────────────────┐   ┌───────────────────────┐
+│  FRONTEND CONTAINER   │   │    API CONTAINER      │   │  SCHEDULER CONTAINER  │
+│  ───────────────────  │   │  ───────────────────  │   │  ───────────────────  │
+│                       │   │                       │   │                       │
+│  Streamlit App        │   │  FastAPI             │   │  Python Scheduler     │
+│  Port: 8080           │◀──┼─▶Port: 8000          │◀──┼─▶No exposed port      │
+│                       │   │                       │   │                       │
+│  Internal connection: │   │                       │   │                       │
+│  api:8000             │   │                       │   │  Internal connection: │
+│                       │   │                       │   │  api:8000             │
+└───────────────────────┘   └───────────────────────┘   └───────────────────────┘
+                                      │
+                                      ▼
+                            ┌───────────────────────┐
+                            │     SHARED VOLUME     │
+                            │  ───────────────────  │
+                            │                       │
+                            │  /data                │
+                            │   ├── models/         │
+                            │   ├── health/         │
+                            │   ├── news/           │
+                            │   ├── papers/         │
+                            │   └── stocks/         │
+                            │                       │
+                            └───────────────────────┘
+
+PORT MAPPINGS:
+- Host 8501 ──▶ Frontend Container Port 8080 (Streamlit)
+- Host 8000 ──▶ API Container Port 8000 (FastAPI)
+
+INTERNAL CONNECTIONS:
+- Frontend → API: http://api:8000
+- Scheduler → API: http://api:8000
+
+DATA FLOW:
+1. User accesses Streamlit app at http://localhost:8501
+2. Frontend container communicates with API at http://api:8000
+3. Scheduler periodically triggers API operations
+4. All containers share access to the data volume

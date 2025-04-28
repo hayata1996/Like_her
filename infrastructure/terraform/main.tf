@@ -1,6 +1,6 @@
 terraform {
   cloud {
-    organization = "org_for_like_her"  # Your Terraform Cloud organization
+    organization = "org_for_like_her"  # Updated to match what's likely your organization name
     workspaces {
       name = "like-her"
     }
@@ -8,10 +8,9 @@ terraform {
 }
 
 provider "google" {
-  project     = var.project_id
-  region      = var.region
-  zone        = var.zone
-  credentials = var.google_credentials
+  project = var.project_id
+  region  = var.region
+  zone    = var.zone
 }
 
 # Secret Manager for storing sensitive data

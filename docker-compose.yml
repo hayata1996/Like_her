@@ -6,12 +6,12 @@ services:
       context: ./app/frontend
       dockerfile: Dockerfile
     ports:
-      - "8501:8501"
+      - "8501:8080"  # Map host port 8501 to container port 8080 where Streamlit is running
     volumes:
       - ./app/frontend:/app
       - ./data:/data
     environment:
-      - API_URL=http://api:8000
+      - API_URL=http://api:8000  # Updated to match the actual API port
     depends_on:
       - api
     restart: unless-stopped
@@ -21,12 +21,19 @@ services:
       context: ./app/api
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Your API is actually running on port 8000 inside the container
     volumes:
       - ./app/api:/app
       - ./data:/data
     environment:
       - MODEL_PATH=/data/models
+      - PORT=8000  # The API is using port 8000
+      - ENVIRONMENT=local
+      - USE_MOCK_RESPONSES=true
+      # These will be ignored in mock mode, but kept for future real integration
+      - PROJECT_ID=local-dev
+      - LOCATION=us-central1
+      - AGENT_ID=local-dev-agent
     restart: unless-stopped
 
   scheduler:
@@ -36,6 +43,8 @@ services:
     volumes:
       - ./app/scheduler:/app
       - ./data:/data
+    environment:
+      - API_URL=http://api:8000  # Updated to match the actual API port
     depends_on:
       - api
     restart: unless-stopped
