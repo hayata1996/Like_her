@@ -20,10 +20,19 @@ resource "google_secret_manager_secret" "gemini_api_key" {
     ignore_changes = [
       replication,
     ]
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 
+# Create a secret version with the Gemini API key
+resource "google_secret_manager_secret_version" "gemini_api_key_version" {
+  secret      = google_secret_manager_secret.gemini_api_key.id
+  secret_data = var.gemini_api_key
+
+  lifecycle {
+    prevent_destroy = false
+  }
+}
 
 # Allow Cloud Run service to access the secret
 resource "google_secret_manager_secret_iam_member" "api_gemini_access" {
@@ -113,29 +122,6 @@ resource "google_cloud_run_service" "frontend" {
   }
 }
 
-# Cloud Scheduler for scheduled tasks
-resource "google_cloud_scheduler_job" "daily_news_job" {
-  name      = "daily-ai-news-job"
-  schedule  = "0 3 * * *"  # Run at 3 AM daily
-  time_zone = "Asia/Tokyo"
-
-  http_target {
-    uri         = "${google_cloud_run_service.api.status[0].url}/tasks/fetch-news"
-    http_method = "POST"
-  }
-}
-
-resource "google_cloud_scheduler_job" "weekly_papers_job" {
-  name      = "weekly-papers-job"
-  schedule  = "0 20 * * 5"  # Run at 8 PM on Fridays
-  time_zone = "Asia/Tokyo"
-
-  http_target {
-    uri         = "${google_cloud_run_service.api.status[0].url}/tasks/fetch-papers"
-    http_method = "POST"
-  }
-}
-
 # BigQuery dataset for data storage
 resource "google_bigquery_dataset" "like_her_dataset" {
   dataset_id    = "like_her_dataset"
@@ -143,12 +129,7 @@ resource "google_bigquery_dataset" "like_her_dataset" {
   location      = "asia-northeast1"
 
   lifecycle {
-    prevent_destroy = true
-    ignore_changes = [
-      # Ignore changes to labels, etc.
-      labels,
-      default_table_expiration_ms,
-    ]
+    prevent_destroy = false
   }
 }
 
@@ -177,11 +158,10 @@ resource "google_bigquery_table" "health_data" {
 ]
 EOF
 
+  deletion_protection = false
+
   lifecycle {
-    prevent_destroy = true
-    ignore_changes = [
-      schema,
-    ]
+    prevent_destroy = false
   }
 }
 
@@ -214,10 +194,38 @@ resource "google_bigquery_table" "news_data" {
 ]
 EOF
 
+  deletion_protection = false
+
   lifecycle {
-    prevent_destroy = true
-    ignore_changes = [
-      schema,
-    ]
+    prevent_destroy = false
   }
+}
+
+# Cloud Scheduler for scheduled tasks
+resource "google_cloud_scheduler_job" "daily_news_job" {
+  name      = "daily-ai-news-job"
+  schedule  = "0 3 * * *"  # Run at 3 AM daily
+  time_zone = "Asia/Tokyo"
+  region    = var.region
+
+  http_target {
+    uri         = "${google_cloud_run_service.api.status[0].url}/tasks/fetch-news"
+    http_method = "POST"
+  }
+
+  depends_on = [google_cloud_run_service.api]
+}
+
+resource "google_cloud_scheduler_job" "weekly_papers_job" {
+  name      = "weekly-papers-job"
+  schedule  = "0 20 * * 5"  # Run at 8 PM on Fridays
+  time_zone = "Asia/Tokyo"
+  region    = var.region
+
+  http_target {
+    uri         = "${google_cloud_run_service.api.status[0].url}/tasks/fetch-papers"
+    http_method = "POST"
+  }
+
+  depends_on = [google_cloud_run_service.api]
 }

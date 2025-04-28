@@ -68,14 +68,18 @@ jobs:
       with:
         terraform_version: 1.5.7
 
-    # Initialize Terraform and import existing resources
-    - name: Terraform Init and Import
+    # Initialize Terraform and handle resource state
+    - name: Terraform Init and State Setup
       run: |
         cd infrastructure/terraform
         terraform init
-        # Try to import resources (may fail if not exist, that's OK)
-        terraform import google_secret_manager_secret.gemini_api_key projects/${{ secrets.GCP_PROJECT_ID }}/secrets/gemini-api-key || true
-        terraform import google_bigquery_dataset.like_her_dataset projects/${{ secrets.GCP_PROJECT_ID }}/datasets/like_her_dataset || true
+        
+        # Try to import Secret Manager secret if it exists
+        terraform import google_secret_manager_secret.gemini_api_key projects/${{ secrets.GCP_PROJECT_ID }}/secrets/gemini-api-key || echo "Secret doesn't exist yet, will be created"
+        
+        # We'll let Terraform create BigQuery resources from scratch
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
 
     # Apply Terraform with project_id, Gemini API key, and AI Builder agent ID
     - name: Terraform Apply
