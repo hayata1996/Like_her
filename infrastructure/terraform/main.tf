@@ -1,6 +1,6 @@
 terraform {
   cloud {
-    organization = "org_for_like-her"  # Update this to your actual Terraform Cloud organization name
+    organization = "org_for_like_her"  # Updated to match what's likely your organization name
     workspaces {
       name = "like-her"
     }
