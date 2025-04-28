@@ -20,11 +20,11 @@ variable "gemini_api_key" {
   description = "Gemini API Key - will be provided by GitHub Actions secrets"
   type        = string
   sensitive   = true
-  # No default value as this will be provided by GitHub Actions
+  default     = "placeholder-key" # Temporary placeholder until you get the real key
 }
 
 variable "agent_id" {
   description = "AI Builder Agent ID"
   type        = string
-  # This will be provided by GitHub Actions or terraform.tfvars
+  default     = "placeholder-agent-id" # Temporary placeholder until you create an agent
 }
