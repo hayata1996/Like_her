@@ -24,5 +24,5 @@ ENV PORT 8080
 # Expose the port
 EXPOSE ${PORT}
 
-# Run the API server with the PORT environment variable
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT}
+# Run the API server with Python directly to use the __main__ block
+CMD python main.py

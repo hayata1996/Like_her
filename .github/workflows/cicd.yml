@@ -62,11 +62,22 @@ jobs:
         docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-scheduler:latest ./app/scheduler
         docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-scheduler:latest
 
-    # Set up Terraform
+    # Set up Terraform with explicit Terraform Cloud token handling
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
         terraform_version: 1.5.7
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    # Create Terraform credentials file explicitly
+    - name: Setup Terraform Credentials
+      run: |
+        cat > ~/.terraformrc << EOF
+        credentials "app.terraform.io" {
+          token = "${{ secrets.TF_API_TOKEN }}"
+        }
+        EOF
+        chmod 0600 ~/.terraformrc
 
     # Initialize Terraform and handle resource state
     - name: Terraform Init and State Setup
