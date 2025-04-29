@@ -107,21 +107,23 @@ jobs:
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
 
-    # Apply Terraform for all resources
-    - name: Terraform Apply
+    # Plan and Apply Terraform in a single step
+    - name: Terraform Plan and Apply
       run: |
         cd infrastructure/terraform
         # Store the credentials in a temporary file
         echo '${{ secrets.GCP_SA_KEY }}' > google_credentials.json
         
-        # Apply all resources
-        terraform apply -auto-approve \
+        # First show the plan, then apply 
+        terraform plan -out=tfplan \
           -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
           -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}" \
           -var "agent_id=${{ secrets.AGENT_ID }}" \
           -var "google_credentials=$(cat google_credentials.json)" \
           -var "allowed_user_email=${{ secrets.YOUR_EMAIL_ADDRESS }}" \
           -var "region=asia-northeast1"
+          
+        terraform apply -auto-approve tfplan
         
         # Clean up
         rm google_credentials.json
