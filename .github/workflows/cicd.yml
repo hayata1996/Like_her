@@ -39,28 +39,28 @@ jobs:
         gcloud services enable cloudscheduler.googleapis.com
         gcloud services enable secretmanager.googleapis.com
 
-    # Configure Docker for GCR
-    - name: Configure Docker
+    # Configure Docker for Artifact Registry
+    - name: Configure Docker for Artifact Registry
       run: |
-        gcloud auth configure-docker gcr.io --quiet
+        gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
         
     # Building and pushing API container
     - name: Build API container
       run: |
-        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-api:latest ./app/api
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-api:latest
+        docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-api:latest ./app/api
+        docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-api:latest
 
     # Building and pushing Frontend container
     - name: Build Frontend container
       run: |
-        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-frontend:latest ./app/frontend
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-frontend:latest
+        docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-frontend:latest ./app/frontend
+        docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-frontend:latest
 
     # Building and pushing Scheduler container
     - name: Build Scheduler container
       run: |
-        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-scheduler:latest ./app/scheduler
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-scheduler:latest
+        docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest ./app/scheduler
+        docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest
 
     # Set up Terraform with explicit Terraform Cloud token handling
     - name: Setup Terraform
@@ -112,36 +112,5 @@ jobs:
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
 
-    # Deploying to Cloud Run
-    - name: Deploy API to Cloud Run
-      run: |
-        gcloud run deploy like-her-api \
-          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-api:latest \
-          --platform managed \
-          --region asia-northeast1 \
-          --service-account=admin-for-like-her@for-like-her.iam.gserviceaccount.com
-
-    - name: Deploy Frontend to Cloud Run
-      run: |
-        gcloud run deploy like-her-frontend \
-          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-frontend:latest \
-          --platform managed \
-          --region asia-northeast1 \
-          --service-account=admin-for-like-her@for-like-her.iam.gserviceaccount.com \
-          --set-env-vars="API_URL=$(gcloud run services describe like-her-api --platform managed --region asia-northeast1 --format='value(status.url)')"
-          
-    # Set IAM policy for API service to allow only developer access
-    - name: Set IAM policy for API service
-      run: |
-        gcloud run services add-iam-policy-binding like-her-api \
-          --region=asia-northeast1 \
-          --member="user:kakamuhayata@gmail.com" \
-          --role="roles/run.invoker"
-          
-    # Set IAM policy for Frontend service to allow only developer access
-    - name: Set IAM policy for Frontend service
-      run: |
-        gcloud run services add-iam-policy-binding like-her-frontend \
-          --region=asia-northeast1 \
-          --member="user:kakamuhayata@gmail.com" \
-          --role="roles/run.invoker"
+    # Note: We no longer need to deploy to Cloud Run manually as Terraform handles it
+    # The IAM policies are also now handled by Terraform

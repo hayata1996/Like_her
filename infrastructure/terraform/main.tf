@@ -14,6 +14,23 @@ provider "google" {
   credentials = var.google_credentials
 }
 
+# Artifact Registry repository for container images
+resource "google_artifact_registry_repository" "like-her-repo" {
+  location      = var.region
+  repository_id = "like-her"
+  description   = "Docker repository for Like Her application"
+  format        = "DOCKER"
+}
+
+# IAM - Grant push access to GitHub Actions
+resource "google_artifact_registry_repository_iam_member" "github_push_access" {
+  project    = var.project_id
+  location   = google_artifact_registry_repository.like-her-repo.location
+  repository = google_artifact_registry_repository.like-her-repo.name
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:admin-for-like-her@for-like-her.iam.gserviceaccount.com"
+}
+
 # Secret Manager for storing sensitive data
 resource "google_secret_manager_secret" "gemini_api_key" {
   secret_id = "gemini-api-key"
@@ -74,139 +91,125 @@ resource "google_secret_manager_secret_version" "allowed_user_email_version" {
   }
 }
 
-# After the secret has been created, we can reference it in a data source
-# This data source will be used to access the email address
-# if the latest is destoroied, build will fail
-data "google_secret_manager_secret_version" "email_version" {
-  secret  = google_secret_manager_secret.allowed_user_email.id
-  version = "latest"
-  
-  depends_on = [
-    google_secret_manager_secret_version.allowed_user_email_version
-  ]
+# Local data source to read the email address safely
+locals {
+  allowed_user_email = var.allowed_user_email
 }
 
 # Allow Cloud Run service to access the secrets
 resource "google_secret_manager_secret_iam_member" "api_gemini_access" {
   secret_id = google_secret_manager_secret.gemini_api_key.id
   role      = "roles/secretmanager.secretAccessor"
-  # Use the admin-for-like-her service account
   member    = "serviceAccount:admin-for-like-her@for-like-her.iam.gserviceaccount.com"
 }
 
 resource "google_secret_manager_secret_iam_member" "api_email_access" {
   secret_id = google_secret_manager_secret.allowed_user_email.id
   role      = "roles/secretmanager.secretAccessor"
-  # Use the admin-for-like-her service account
   member    = "serviceAccount:admin-for-like-her@for-like-her.iam.gserviceaccount.com"
 }
 
-# Cloud Run service for API
-resource "google_cloud_run_service" "api" {
+# Cloud Run v2 service for API
+resource "google_cloud_run_v2_service" "api" {
   name     = "like-her-api"
   location = var.region
 
   template {
-    spec {
-      service_account_name = "admin-for-like-her@for-like-her.iam.gserviceaccount.com"
-      containers {
-        image = "gcr.io/${var.project_id}/like-her-api:latest"
-        
-        resources {
-          limits = {
-            cpu    = "1000m"
-            memory = "2Gi"
-          }
+    service_account = "admin-for-like-her@for-like-her.iam.gserviceaccount.com"
+    
+    containers {
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/like-her/like-her-api:latest"
+      
+      resources {
+        limits = {
+          cpu    = "1000m"
+          memory = "2Gi"
         }
-        
-        env {
-          name  = "MODEL_PATH"
-          value = "/data/models"
-        }
-        
-        # Add AI Builder environment variables instead of Gemini
-        env {
-          name  = "PROJECT_ID"
-          value = var.project_id
-        }
-        
-        env {
-          name  = "LOCATION"
-          value = "us-central1"  # AI Builder's primary region
-        }
-        
-        env {
-          name  = "AGENT_ID"
-          value = var.agent_id  # The ID of your AI Builder agent
-        }
+      }
+      
+      env {
+        name  = "MODEL_PATH"
+        value = "/data/models"
+      }
+      
+      env {
+        name  = "PROJECT_ID"
+        value = var.project_id
+      }
+      
+      env {
+        name  = "LOCATION"
+        value = "asia-northeast1"  # AI Builder's primary region
+      }
+      
+      env {
+        name  = "AGENT_ID"
+        value = var.agent_id  # The ID of your AI Builder agent
       }
     }
   }
-
-  traffic {
-    percent         = 100
-    latest_revision = true
-  }
 }
 
-# IAM policy binding for API service - restrict to user only
-resource "google_cloud_run_service_iam_binding" "api_no_public_access" {
-  location = google_cloud_run_service.api.location
-  service  = google_cloud_run_service.api.name
-  role     = "roles/run.invoker"
-  members  = [
-    "user:${data.google_secret_manager_secret_version.email_version.secret_data}"
-  ]
-
-  depends_on = [
-    data.google_secret_manager_secret_version.email_version
-  ]
+# IAM policy binding for API service - using v2 format
+resource "google_cloud_run_v2_service_iam_policy" "api_noauth_policy" {
+  name        = google_cloud_run_v2_service.api.name
+  location    = google_cloud_run_v2_service.api.location
+  project     = var.project_id
+  
+  policy_data = jsonencode({
+    bindings = [
+      {
+        role = "roles/run.invoker"
+        members = [
+          "user:${local.allowed_user_email}",
+        ]
+      }
+    ]
+  })
 }
 
-# Cloud Run service for Frontend
-resource "google_cloud_run_service" "frontend" {
+# Cloud Run v2 service for Frontend
+resource "google_cloud_run_v2_service" "frontend" {
   name     = "like-her-frontend"
   location = var.region
 
   template {
-    spec {
-      service_account_name = "admin-for-like-her@for-like-her.iam.gserviceaccount.com"
-      containers {
-        image = "gcr.io/${var.project_id}/like-her-frontend:latest"
-        
-        resources {
-          limits = {
-            cpu    = "1000m"
-            memory = "1Gi"
-          }
+    service_account = "admin-for-like-her@for-like-her.iam.gserviceaccount.com"
+    
+    containers {
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/like-her/like-her-frontend:latest"
+      
+      resources {
+        limits = {
+          cpu    = "1000m"
+          memory = "1Gi"
         }
-        
-        env {
-          name  = "API_URL"
-          value = google_cloud_run_service.api.status[0].url
-        }
+      }
+      
+      env {
+        name  = "API_URL"
+        value = google_cloud_run_v2_service.api.uri
       }
     }
   }
-
-  traffic {
-    percent         = 100
-    latest_revision = true
-  }
 }
 
-# IAM policy binding for Frontend service - restrict to user only
-resource "google_cloud_run_service_iam_binding" "frontend_no_public_access" {
-  location = google_cloud_run_service.frontend.location
-  service  = google_cloud_run_service.frontend.name
-  role     = "roles/run.invoker"
-  members  = [
-    "user:${data.google_secret_manager_secret_version.email_version.secret_data}"
-  ]
-
-  depends_on = [
-    data.google_secret_manager_secret_version.email_version
-  ]
+# IAM policy binding for Frontend service - using v2 format
+resource "google_cloud_run_v2_service_iam_policy" "frontend_noauth_policy" {
+  name        = google_cloud_run_v2_service.frontend.name
+  location    = google_cloud_run_v2_service.frontend.location
+  project     = var.project_id
+  
+  policy_data = jsonencode({
+    bindings = [
+      {
+        role = "roles/run.invoker"
+        members = [
+          "user:${local.allowed_user_email}",
+        ]
+      }
+    ]
+  })
 }
 
 # BigQuery dataset for data storage
@@ -296,11 +299,11 @@ resource "google_cloud_scheduler_job" "daily_news_job" {
   region    = var.region
 
   http_target {
-    uri         = "${google_cloud_run_service.api.status[0].url}/tasks/fetch-news"
+    uri         = "${google_cloud_run_v2_service.api.uri}/tasks/fetch-news"
     http_method = "POST"
   }
 
-  depends_on = [google_cloud_run_service.api]
+  depends_on = [google_cloud_run_v2_service.api]
 }
 
 resource "google_cloud_scheduler_job" "weekly_papers_job" {
@@ -310,9 +313,9 @@ resource "google_cloud_scheduler_job" "weekly_papers_job" {
   region    = var.region
 
   http_target {
-    uri         = "${google_cloud_run_service.api.status[0].url}/tasks/fetch-papers"
+    uri         = "${google_cloud_run_v2_service.api.uri}/tasks/fetch-papers"
     http_method = "POST"
   }
 
-  depends_on = [google_cloud_run_service.api]
+  depends_on = [google_cloud_run_v2_service.api]
 }
