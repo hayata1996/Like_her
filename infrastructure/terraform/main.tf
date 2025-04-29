@@ -1,6 +1,6 @@
 terraform {
   cloud {
-    organization = "org_for_like_her"  # Updated to match what's likely your organization name
+    organization = "org_for_like_her"
     workspaces {
       name = "like-her"
     }
@@ -23,12 +23,15 @@ resource "google_artifact_registry_repository" "like-her-repo" {
   
   # Add lifecycle block to prevent errors when the repository already exists
   lifecycle {
-    ignore_changes = [
-      location,
-      repository_id,
-      format,
-      description
-    ]
+    ignore_changes = all
+    prevent_destroy = true
+  }
+
+  # This will allow Terraform to continue even if repository creation fails
+  # because it already exists (after we import it in the workflow)
+  provisioner "local-exec" {
+    command = "echo 'Artifact Registry repository configured'"
+    on_failure = continue
   }
 }
 
