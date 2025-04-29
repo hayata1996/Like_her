@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "Google Cloud プロジェクトID"
   type        = string
-  default     = " " # Your actual GCP project ID
+  default     = "this_should_be_replaced" # Your actual GCP project ID
 }
 
 variable "region" {

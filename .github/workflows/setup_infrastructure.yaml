@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'infrastructure/**'  # インフラ構成変更だけトリガーするイメージ
+      - 'infrastructure/**'  # Trigger only when infra code changes
 
 jobs:
   setup-resources:
@@ -23,19 +23,24 @@ jobs:
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-    - name: Create Artifact Registry
-      run: |
-        if ! gcloud artifacts repositories describe like-her --location=asia-northeast1 &>/dev/null; then
-          gcloud artifacts repositories create like-her \
-            --repository-format=docker \
-            --location=asia-northeast1 \
-            --description="Docker repository for Like Her application"
-        fi
-
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
         terraform_version: 1.5.7
+
+    - name: Setup Terraform Cloud Token
+      run: |
+        mkdir -p ~/.terraform.d
+        cat > ~/.terraform.d/credentials.tfrc.json << EOF
+        {
+          "credentials": {
+            "app.terraform.io": {
+              "token": "${{ secrets.TF_API_TOKEN }}"
+            }
+          }
+        }
+        EOF
+        chmod 0600 ~/.terraform.d/credentials.tfrc.json
 
     - name: Terraform Init and Apply
       run: |
