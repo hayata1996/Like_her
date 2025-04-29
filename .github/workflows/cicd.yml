@@ -39,6 +39,20 @@ jobs:
         gcloud services enable cloudscheduler.googleapis.com
         gcloud services enable secretmanager.googleapis.com
 
+    # Create Artifact Registry repository if it doesn't exist
+    - name: Create Artifact Registry repository
+      run: |
+        # Check if repository exists
+        if ! gcloud artifacts repositories describe like-her --location=asia-northeast1 &>/dev/null; then
+          echo "Creating Artifact Registry repository 'like-her'..."
+          gcloud artifacts repositories create like-her \
+            --repository-format=docker \
+            --location=asia-northeast1 \
+            --description="Docker repository for Like Her application"
+        else
+          echo "Repository 'like-her' already exists."
+        fi
+
     # Configure Docker for Artifact Registry
     - name: Configure Docker for Artifact Registry
       run: |
