@@ -20,6 +20,16 @@ resource "google_artifact_registry_repository" "like-her-repo" {
   repository_id = "like-her"
   description   = "Docker repository for Like Her application"
   format        = "DOCKER"
+  
+  # Add lifecycle block to prevent errors when the repository already exists
+  lifecycle {
+    ignore_changes = [
+      location,
+      repository_id,
+      format,
+      description
+    ]
+  }
 }
 
 # IAM - Grant push access to GitHub Actions
@@ -148,6 +158,11 @@ resource "google_cloud_run_v2_service" "api" {
       }
     }
   }
+  
+  # Add lifecycle block to prevent recreation issues
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # IAM policy binding for API service - using v2 format
@@ -191,6 +206,11 @@ resource "google_cloud_run_v2_service" "frontend" {
         value = google_cloud_run_v2_service.api.uri
       }
     }
+  }
+  
+  # Add lifecycle block to prevent recreation issues
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -301,6 +321,12 @@ resource "google_cloud_scheduler_job" "daily_news_job" {
   http_target {
     uri         = "${google_cloud_run_v2_service.api.uri}/tasks/fetch-news"
     http_method = "POST"
+    
+    # Add this to ensure that authentication works
+    oidc_token {
+      service_account_email = "admin-for-like-her@for-like-her.iam.gserviceaccount.com"
+      audience              = google_cloud_run_v2_service.api.uri
+    }
   }
 
   depends_on = [google_cloud_run_v2_service.api]
@@ -315,6 +341,12 @@ resource "google_cloud_scheduler_job" "weekly_papers_job" {
   http_target {
     uri         = "${google_cloud_run_v2_service.api.uri}/tasks/fetch-papers"
     http_method = "POST"
+    
+    # Add this to ensure that authentication works
+    oidc_token {
+      service_account_email = "admin-for-like-her@for-like-her.iam.gserviceaccount.com"
+      audience              = google_cloud_run_v2_service.api.uri
+    }
   }
 
   depends_on = [google_cloud_run_v2_service.api]
