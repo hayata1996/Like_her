@@ -56,7 +56,7 @@ resource "google_secret_manager_secret" "gemini_api_key" {
     ignore_changes = [
       replication,
     ]
-    prevent_destroy = false
+    prevent_destroy = true
   }
 }
 

@@ -42,7 +42,6 @@ jobs:
     # Create Artifact Registry repository if it doesn't exist
     - name: Create Artifact Registry repository
       run: |
-        # Check if repository exists
         if ! gcloud artifacts repositories describe like-her --location=asia-northeast1 &>/dev/null; then
           echo "Creating Artifact Registry repository 'like-her'..."
           gcloud artifacts repositories create like-her \
@@ -53,85 +52,29 @@ jobs:
           echo "Repository 'like-her' already exists."
         fi
 
-    # Configure Docker for Artifact Registry
-    - name: Configure Docker for Artifact Registry
+    # Docker Build and Push
+    - name: Build and Push Containers
       run: |
         gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
-        
-    # Building and pushing API container
-    - name: Build API container
-      run: |
         docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-api:latest ./app/api
         docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-api:latest
 
-    # Building and pushing Frontend container
-    - name: Build Frontend container
-      run: |
         docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-frontend:latest ./app/frontend
         docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-frontend:latest
 
-    # Building and pushing Scheduler container
-    - name: Build Scheduler container
-      run: |
         docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest ./app/scheduler
         docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest
 
-    # Set up Terraform with explicit Terraform Cloud token handling
+    # Setup Terraform
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
         terraform_version: 1.5.7
         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-    # Create Terraform credentials file explicitly
-    - name: Setup Terraform Credentials
-      run: |
-        cat > ~/.terraformrc << EOF
-        credentials "app.terraform.io" {
-          token = "${{ secrets.TF_API_TOKEN }}"
-        }
-        EOF
-        chmod 0600 ~/.terraformrc
-
-    # Initialize Terraform and import existing resources
-    - name: Terraform Init and Import
+    - name: Terraform Init & Plan & Apply
       run: |
         cd infrastructure/terraform
         terraform init
-        
-        # Import Artifact Registry repository
-        terraform import google_artifact_registry_repository.like-her-repo "projects/${{ secrets.GCP_PROJECT_ID }}/locations/asia-northeast1/repositories/like-her" || echo "Repository import failed, but we'll continue"
-        
-        # Import Secret Manager secret if it exists
-        terraform import google_secret_manager_secret.gemini_api_key "projects/${{ secrets.GCP_PROJECT_ID }}/secrets/gemini-api-key" || echo "Secret doesn't exist yet, will be created"
-      env:
-        GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
-
-    # Plan and Apply Terraform in a single step
-    - name: Terraform Plan and Apply
-      run: |
-        cd infrastructure/terraform
-        # Store the credentials in a temporary file
-        echo '${{ secrets.GCP_SA_KEY }}' > google_credentials.json
-        
-        # First show the plan, then apply 
-        terraform plan \
-          -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
-          -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}" \
-          -var "agent_id=${{ secrets.AGENT_ID }}" \
-          -var "google_credentials=$(cat google_credentials.json)" \
-          -var "allowed_user_email=${{ secrets.YOUR_EMAIL_ADDRESS }}" \
-          -var "region=asia-northeast1"
-          
-        terraform apply -auto-approve \
-          -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
-          -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}" \
-          -var "agent_id=${{ secrets.AGENT_ID }}" \
-          -var "google_credentials=$(cat google_credentials.json)" \
-          -var "allowed_user_email=${{ secrets.YOUR_EMAIL_ADDRESS }}" \
-          -var "region=asia-northeast1"
-        
-        # Clean up
-        rm google_credentials.json
-      env:
-        GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+        terraform plan
+        terraform apply -auto-approve
