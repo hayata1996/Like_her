@@ -15,7 +15,6 @@ provider "google" {
 }
 
 # Artifact Registry repository defined as a resource (not data source)
-# hoge
 resource "google_artifact_registry_repository" "like-her-repo" {
   location      = var.region
   repository_id = "like-her"
