@@ -108,6 +108,27 @@ jobs:
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
 
+    # Run plan after import to ensure the imported resources are properly recognized
+    - name: Terraform Plan
+      run: |
+        cd infrastructure/terraform
+        # Store the credentials in a temporary file
+        echo '${{ secrets.GCP_SA_KEY }}' > google_credentials.json
+        
+        # Generate a plan to ensure imported resources are recognized
+        terraform plan \
+          -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
+          -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}" \
+          -var "agent_id=${{ secrets.AGENT_ID }}" \
+          -var "google_credentials=$(cat google_credentials.json)" \
+          -var "allowed_user_email=${{ secrets.YOUR_EMAIL_ADDRESS }}" \
+          -var "region=asia-northeast1"
+          
+        # Clean up
+        rm google_credentials.json
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+
     # Apply Terraform with project_id, Gemini API key, AI Builder agent ID, and Google credentials
     - name: Terraform Apply
       run: |
