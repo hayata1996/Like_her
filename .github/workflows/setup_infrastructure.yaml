@@ -1,0 +1,44 @@
+name: Setup Cloud Resources
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infrastructure/**'  # インフラ構成変更だけトリガーするイメージ
+
+jobs:
+  setup-resources:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Authenticate GCP
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    - name: Set up gcloud
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Create Artifact Registry
+      run: |
+        if ! gcloud artifacts repositories describe like-her --location=asia-northeast1 &>/dev/null; then
+          gcloud artifacts repositories create like-her \
+            --repository-format=docker \
+            --location=asia-northeast1 \
+            --description="Docker repository for Like Her application"
+        fi
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.5.7
+
+    - name: Terraform Init and Apply
+      run: |
+        cd infrastructure/terraform
+        terraform init
+        terraform apply -auto-approve
