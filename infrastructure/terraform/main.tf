@@ -76,6 +76,7 @@ resource "google_secret_manager_secret_version" "allowed_user_email_version" {
 
 # After the secret has been created, we can reference it in a data source
 # This data source will be used to access the email address
+# if the latest is destoroied, build will fail
 data "google_secret_manager_secret_version" "email_version" {
   secret  = google_secret_manager_secret.allowed_user_email.id
   version = "latest"
