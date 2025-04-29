@@ -14,24 +14,20 @@ provider "google" {
   credentials = var.google_credentials
 }
 
-# Artifact Registry repository for container images
+# Artifact Registry repository defined as a resource (not data source)
 resource "google_artifact_registry_repository" "like-her-repo" {
   location      = var.region
   repository_id = "like-her"
   description   = "Docker repository for Like Her application"
   format        = "DOCKER"
   
-  # Add lifecycle block to prevent errors when the repository already exists
+  # Add lifecycle configuration for extra protection
   lifecycle {
-    ignore_changes = all
+    ignore_changes = [
+      description,
+      format
+    ]
     prevent_destroy = true
-  }
-
-  # This will allow Terraform to continue even if repository creation fails
-  # because it already exists (after we import it in the workflow)
-  provisioner "local-exec" {
-    command = "echo 'Artifact Registry repository configured'"
-    on_failure = continue
   }
 }
 

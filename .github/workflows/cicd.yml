@@ -93,50 +93,28 @@ jobs:
         EOF
         chmod 0600 ~/.terraformrc
 
-    # Initialize Terraform and handle resource state
-    - name: Terraform Init and State Setup
+    # Initialize Terraform and import existing resources
+    - name: Terraform Init and Import
       run: |
         cd infrastructure/terraform
         terraform init
         
-        # Try to import Secret Manager secret if it exists
-        terraform import google_secret_manager_secret.gemini_api_key projects/${{ secrets.GCP_PROJECT_ID }}/secrets/gemini-api-key || echo "Secret doesn't exist yet, will be created"
+        # Import Artifact Registry repository
+        terraform import google_artifact_registry_repository.like-her-repo "projects/${{ secrets.GCP_PROJECT_ID }}/locations/asia-northeast1/repositories/like-her" || echo "Repository import failed, but we'll continue"
         
-        # Import the existing Artifact Registry repository
-        terraform import google_artifact_registry_repository.like-her-repo projects/${{ secrets.GCP_PROJECT_ID }}/locations/asia-northeast1/repositories/like-her || echo "Repository import failed, will attempt to create"
-        
+        # Import Secret Manager secret if it exists
+        terraform import google_secret_manager_secret.gemini_api_key "projects/${{ secrets.GCP_PROJECT_ID }}/secrets/gemini-api-key" || echo "Secret doesn't exist yet, will be created"
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
 
-    # Run plan after import to ensure the imported resources are properly recognized
-    - name: Terraform Plan
-      run: |
-        cd infrastructure/terraform
-        # Store the credentials in a temporary file
-        echo '${{ secrets.GCP_SA_KEY }}' > google_credentials.json
-        
-        # Generate a plan to ensure imported resources are recognized
-        terraform plan \
-          -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
-          -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}" \
-          -var "agent_id=${{ secrets.AGENT_ID }}" \
-          -var "google_credentials=$(cat google_credentials.json)" \
-          -var "allowed_user_email=${{ secrets.YOUR_EMAIL_ADDRESS }}" \
-          -var "region=asia-northeast1"
-          
-        # Clean up
-        rm google_credentials.json
-      env:
-        GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
-
-    # Apply Terraform with project_id, Gemini API key, AI Builder agent ID, and Google credentials
+    # Apply Terraform for all resources
     - name: Terraform Apply
       run: |
         cd infrastructure/terraform
         # Store the credentials in a temporary file
         echo '${{ secrets.GCP_SA_KEY }}' > google_credentials.json
         
-        # Use the file for authentication
+        # Apply all resources
         terraform apply -auto-approve \
           -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
           -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}" \
