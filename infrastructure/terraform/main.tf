@@ -14,12 +14,6 @@ provider "google" {
   credentials = var.google_credentials
 }
 
-# Data source to retrieve the email address from Secret Manager
-data "google_secret_manager_secret_version" "email_version" {
-  secret  = google_secret_manager_secret.allowed_user_email.id
-  version = "latest"
-}
-
 # Secret Manager for storing sensitive data
 resource "google_secret_manager_secret" "gemini_api_key" {
   secret_id = "gemini-api-key"
@@ -27,7 +21,7 @@ resource "google_secret_manager_secret" "gemini_api_key" {
   replication {
     user_managed {
       replicas {
-        location = "us-central1"
+        location = "asia-northeast1"
       }
     }
   }
@@ -78,6 +72,17 @@ resource "google_secret_manager_secret_version" "allowed_user_email_version" {
   lifecycle {
     prevent_destroy = false
   }
+}
+
+# After the secret has been created, we can reference it in a data source
+# This data source will be used to access the email address
+data "google_secret_manager_secret_version" "email_version" {
+  secret  = google_secret_manager_secret.allowed_user_email.id
+  version = "latest"
+  
+  depends_on = [
+    google_secret_manager_secret_version.allowed_user_email_version
+  ]
 }
 
 # Allow Cloud Run service to access the secrets
@@ -151,6 +156,10 @@ resource "google_cloud_run_service_iam_binding" "api_no_public_access" {
   members  = [
     "user:${data.google_secret_manager_secret_version.email_version.secret_data}"
   ]
+
+  depends_on = [
+    data.google_secret_manager_secret_version.email_version
+  ]
 }
 
 # Cloud Run service for Frontend
@@ -192,6 +201,10 @@ resource "google_cloud_run_service_iam_binding" "frontend_no_public_access" {
   role     = "roles/run.invoker"
   members  = [
     "user:${data.google_secret_manager_secret_version.email_version.secret_data}"
+  ]
+
+  depends_on = [
+    data.google_secret_manager_secret_version.email_version
   ]
 }
 
