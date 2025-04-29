@@ -34,3 +34,9 @@ variable "google_credentials" {
   type        = string
   sensitive   = true
 }
+
+variable "allowed_user_email" {
+  description = "アクセスを許可するGoogleアカウントのメールアドレス"
+  type        = string
+  default     = "template@gmail.com" # あなたのGoogleアカウントのメールアドレスに変更してください
+}

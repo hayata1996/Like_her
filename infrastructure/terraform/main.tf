@@ -14,6 +14,12 @@ provider "google" {
   credentials = var.google_credentials
 }
 
+# Data source to retrieve the email address from Secret Manager
+data "google_secret_manager_secret_version" "email_version" {
+  secret  = google_secret_manager_secret.allowed_user_email.id
+  version = "latest"
+}
+
 # Secret Manager for storing sensitive data
 resource "google_secret_manager_secret" "gemini_api_key" {
   secret_id = "gemini-api-key"
@@ -44,9 +50,46 @@ resource "google_secret_manager_secret_version" "gemini_api_key_version" {
   }
 }
 
-# Allow Cloud Run service to access the secret
+# Secret for allowed user email
+resource "google_secret_manager_secret" "allowed_user_email" {
+  secret_id = "allowed-user-email"
+  
+  replication {
+    user_managed {
+      replicas {
+        location = "asia-northeast1"
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      replication,
+    ]
+    prevent_destroy = false
+  }
+}
+
+# Create a secret version with the allowed user email
+resource "google_secret_manager_secret_version" "allowed_user_email_version" {
+  secret      = google_secret_manager_secret.allowed_user_email.id
+  secret_data = var.allowed_user_email
+
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
+# Allow Cloud Run service to access the secrets
 resource "google_secret_manager_secret_iam_member" "api_gemini_access" {
   secret_id = google_secret_manager_secret.gemini_api_key.id
+  role      = "roles/secretmanager.secretAccessor"
+  # Use the admin-for-like-her service account
+  member    = "serviceAccount:admin-for-like-her@for-like-her.iam.gserviceaccount.com"
+}
+
+resource "google_secret_manager_secret_iam_member" "api_email_access" {
+  secret_id = google_secret_manager_secret.allowed_user_email.id
   role      = "roles/secretmanager.secretAccessor"
   # Use the admin-for-like-her service account
   member    = "serviceAccount:admin-for-like-her@for-like-her.iam.gserviceaccount.com"
@@ -100,6 +143,16 @@ resource "google_cloud_run_service" "api" {
   }
 }
 
+# IAM policy binding for API service - restrict to user only
+resource "google_cloud_run_service_iam_binding" "api_no_public_access" {
+  location = google_cloud_run_service.api.location
+  service  = google_cloud_run_service.api.name
+  role     = "roles/run.invoker"
+  members  = [
+    "user:${data.google_secret_manager_secret_version.email_version.secret_data}"
+  ]
+}
+
 # Cloud Run service for Frontend
 resource "google_cloud_run_service" "frontend" {
   name     = "like-her-frontend"
@@ -130,6 +183,16 @@ resource "google_cloud_run_service" "frontend" {
     percent         = 100
     latest_revision = true
   }
+}
+
+# IAM policy binding for Frontend service - restrict to user only
+resource "google_cloud_run_service_iam_binding" "frontend_no_public_access" {
+  location = google_cloud_run_service.frontend.location
+  service  = google_cloud_run_service.frontend.name
+  role     = "roles/run.invoker"
+  members  = [
+    "user:${data.google_secret_manager_secret_version.email_version.secret_data}"
+  ]
 }
 
 # BigQuery dataset for data storage

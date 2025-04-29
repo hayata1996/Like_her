@@ -104,7 +104,8 @@ jobs:
           -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
           -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}" \
           -var "agent_id=${{ secrets.AGENT_ID }}" \
-          -var "google_credentials=$(cat google_credentials.json)"
+          -var "google_credentials=$(cat google_credentials.json)" \
+          -var "allowed_user_email=${{ secrets.YOUR_EMAIL_ADDRESS }}"
         
         # Clean up
         rm google_credentials.json
@@ -118,7 +119,6 @@ jobs:
           --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-api:latest \
           --platform managed \
           --region asia-northeast1 \
-          --allow-unauthenticated \
           --service-account=admin-for-like-her@for-like-her.iam.gserviceaccount.com
 
     - name: Deploy Frontend to Cloud Run
@@ -127,6 +127,21 @@ jobs:
           --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/like-her-frontend:latest \
           --platform managed \
           --region asia-northeast1 \
-          --allow-unauthenticated \
           --service-account=admin-for-like-her@for-like-her.iam.gserviceaccount.com \
           --set-env-vars="API_URL=$(gcloud run services describe like-her-api --platform managed --region asia-northeast1 --format='value(status.url)')"
+          
+    # Set IAM policy for API service to allow only developer access
+    - name: Set IAM policy for API service
+      run: |
+        gcloud run services add-iam-policy-binding like-her-api \
+          --region=asia-northeast1 \
+          --member="user:kakamuhayata@gmail.com" \
+          --role="roles/run.invoker"
+          
+    # Set IAM policy for Frontend service to allow only developer access
+    - name: Set IAM policy for Frontend service
+      run: |
+        gcloud run services add-iam-policy-binding like-her-frontend \
+          --region=asia-northeast1 \
+          --member="user:kakamuhayata@gmail.com" \
+          --role="roles/run.invoker"
