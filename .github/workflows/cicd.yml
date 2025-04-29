@@ -115,7 +115,7 @@ jobs:
         echo '${{ secrets.GCP_SA_KEY }}' > google_credentials.json
         
         # First show the plan, then apply 
-        terraform plan -out=tfplan \
+        terraform plan \
           -var "project_id=${{ secrets.GCP_PROJECT_ID }}" \
           -var "gemini_api_key=${{ secrets.GEMINI_API_KEY }}" \
           -var "agent_id=${{ secrets.AGENT_ID }}" \
@@ -123,7 +123,7 @@ jobs:
           -var "allowed_user_email=${{ secrets.YOUR_EMAIL_ADDRESS }}" \
           -var "region=asia-northeast1"
           
-        terraform apply -auto-approve tfplan
+        terraform apply -auto-approve
         
         # Clean up
         rm google_credentials.json
