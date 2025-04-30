@@ -100,11 +100,6 @@ resource "google_secret_manager_secret_version" "allowed_user_email_version" {
   }
 }
 
-# Local data source to read the email address safely
-locals {
-  allowed_user_email = var.allowed_user_email
-}
-
 # Allow Cloud Run service to access the secrets
 resource "google_secret_manager_secret_iam_member" "api_gemini_access" {
   secret_id = google_secret_manager_secret.gemini_api_key.id
@@ -175,7 +170,7 @@ resource "google_cloud_run_v2_service_iam_policy" "api_noauth_policy" {
       {
         role = "roles/run.invoker"
         members = [
-          "user:${local.allowed_user_email}",
+          "user:${var.allowed_user_email}",
         ]
       }
     ]
@@ -211,24 +206,6 @@ resource "google_cloud_run_v2_service" "frontend" {
   lifecycle {
     create_before_destroy = true
   }
-}
-
-# IAM policy binding for Frontend service - using v2 format
-resource "google_cloud_run_v2_service_iam_policy" "frontend_noauth_policy" {
-  name        = google_cloud_run_v2_service.frontend.name
-  location    = google_cloud_run_v2_service.frontend.location
-  project     = var.project_id
-  
-  policy_data = jsonencode({
-    bindings = [
-      {
-        role = "roles/run.invoker"
-        members = [
-          "user:${local.allowed_user_email}",
-        ]
-      }
-    ]
-  })
 }
 
 # BigQuery dataset for data storage
@@ -349,4 +326,16 @@ resource "google_cloud_scheduler_job" "weekly_papers_job" {
   }
 
   depends_on = [google_cloud_run_v2_service.api]
+}
+
+# from this official document: https://cloud.google.com/run/docs/authenticating/developers?hl=ja
+resource "google_cloud_run_v2_service_iam_binding" "frontend_user_access" {
+  project  = var.project_id
+  location = google_cloud_run_v2_service.frontend.location
+  name     = google_cloud_run_v2_service.frontend.name
+  role     = "roles/run.invoker"
+
+  members = [
+    "user:${var.allowed_user_email}"
+  ]
 }
