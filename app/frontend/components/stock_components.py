@@ -33,52 +33,11 @@ def get_stock_data():
             return df
         else:
             st.error(f"Failed to fetch stock data: {response.status_code}")
-            # Return fallback data for demonstration
-            return get_fallback_stock_data()
+            return
     except Exception as e:
         st.error(f"Error fetching stock data: {e}")
-        # Return fallback data for demonstration
-        return get_fallback_stock_data()
+        return
 
-def get_fallback_stock_data():
-    """Generate fallback stock data when API is unavailable"""
-    # Create a date range for the past 30 days
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=30)
-    date_range = pd.date_range(start=start_date, end=end_date, freq='B')
-    
-    # Generate random stock data
-    base_price = 60000  # Starting price
-    price_range = 5000  # Max fluctuation
-    
-    data = []
-    close_price = base_price
-    
-    for date in date_range:
-        # Generate realistic price movements
-        open_price = close_price
-        high_price = open_price * (1 + (random.uniform(0, 0.03)))
-        low_price = open_price * (1 - (random.uniform(0, 0.03)))
-        close_price = random.uniform(low_price, high_price)
-        volume = int(random.uniform(100000, 1000000))
-        
-        data.append({
-            'Date': date,
-            'Open': open_price,
-            'High': high_price,
-            'Low': low_price,
-            'Close': close_price,
-            'Volume': volume
-        })
-    
-    df = pd.DataFrame(data)
-    
-    # Calculate moving averages
-    df['MA5'] = df['Close'].rolling(window=5).mean()
-    df['MA20'] = df['Close'].rolling(window=20).mean()
-    df['Symbol'] = '7974.T'
-    
-    return df
 
 def display_stock_chart():
     """Display stock chart with input controls"""
@@ -95,7 +54,11 @@ def display_stock_chart():
         st.button("Refresh Data", on_click=lambda: st.session_state.update({'refresh_stocks': True}))
     
     # Fetch stock data
-    df = get_stock_data()
+    try:
+        df = get_stock_data()
+    except Exception as e:
+        st.error(f"Error fetching stock data: {e}")
+        return
     
     # Create candlestick chart
     fig = go.Figure(data=[go.Candlestick(

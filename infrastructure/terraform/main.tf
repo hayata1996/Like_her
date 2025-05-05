@@ -170,7 +170,7 @@ resource "google_cloud_run_v2_service_iam_policy" "api_noauth_policy" {
       {
         role = "roles/run.invoker"
         members = [
-          "user:${var.allowed_user_email}",
+          "allUsers",
         ]
       }
     ]
