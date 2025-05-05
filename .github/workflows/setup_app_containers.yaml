@@ -13,7 +13,9 @@ on:
 
 jobs:
   deploy-app:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}  # 成功した場合だけ実行
+    if: |
+      github.event_name == 'push' || 
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
