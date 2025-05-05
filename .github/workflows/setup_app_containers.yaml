@@ -44,8 +44,8 @@ jobs:
       run: |
         if gcloud run services describe like-her-api --region=asia-northeast1 --platform=managed > /dev/null 2>&1; then
           echo "Service exists. Updating container..."
-          gcloud run services update-container like-her-api \
-            --container-image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-api:latest \
+          gcloud run services update like-her-api \
+            --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-api:latest \
             --region=asia-northeast1 --platform=managed --quiet
         else
           echo "Service not found. Deploying for the first time..."
@@ -58,8 +58,8 @@ jobs:
       run: |
         if gcloud run services describe like-her-frontend --region=asia-northeast1 --platform=managed > /dev/null 2>&1; then
           echo "Service exists. Updating container..."
-          gcloud run services update-container like-her-frontend \
-            --container-image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-frontend:latest \
+          gcloud run services update like-her-frontend \
+            --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-frontend:latest \
             --region=asia-northeast1 --platform=managed --quiet
         else
           echo "Service not found. Deploying for the first time..."
@@ -73,8 +73,8 @@ jobs:
       run: |
         if gcloud run services describe like-her-scheduler --region=asia-northeast1 --platform=managed > /dev/null 2>&1; then
           echo "Service exists. Updating container..."
-          gcloud run services update-container like-her-scheduler \
-            --container-image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest \
+          gcloud run services update like-her-scheduler \
+            --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest \
             --region=asia-northeast1 --platform=managed --quiet
         else
           echo "Service not found. Deploying for the first time..."
