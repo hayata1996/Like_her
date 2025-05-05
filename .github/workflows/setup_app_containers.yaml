@@ -4,18 +4,9 @@ on:
   push:
     branches:
       - main
-  workflow_run:
-    workflows: ["Setup Cloud Resources"]  # ←1つ目のworkflowの「name」と一致させる
-    types:
-      - completed
-    branches:
-      - main
 
 jobs:
   deploy-app:
-    if: |
-      github.event_name == 'push' || 
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -49,24 +40,45 @@ jobs:
         docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest ./app/scheduler
         docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest
 
-    - name: Deploy like-her-api to Cloud Run
+    - name: Deploy like-her-api
       run: |
-        gcloud run deploy like-her-api \
-          --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-api:latest \
-          --platform=managed \
-          --region=asia-northeast1
+        if gcloud run services describe like-her-api --region=asia-northeast1 --platform=managed > /dev/null 2>&1; then
+          echo "Service exists. Updating container..."
+          gcloud run services update-container like-her-api \
+            --container-image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-api:latest \
+            --region=asia-northeast1 --platform=managed --quiet
+        else
+          echo "Service not found. Deploying for the first time..."
+          gcloud run deploy like-her-api \
+            --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-api:latest \
+            --region=asia-northeast1 --platform=managed --quiet
+        fi
 
-    - name: Deploy like-her-frontend to Cloud Run
+    - name: Deploy like-her-frontend
       run: |
-        gcloud run deploy like-her-frontend \
-          --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-frontend:latest \
-          --platform=managed \
-          --region=asia-northeast1 \
-          --allow-unauthenticated
+        if gcloud run services describe like-her-frontend --region=asia-northeast1 --platform=managed > /dev/null 2>&1; then
+          echo "Service exists. Updating container..."
+          gcloud run services update-container like-her-frontend \
+            --container-image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-frontend:latest \
+            --region=asia-northeast1 --platform=managed --quiet
+        else
+          echo "Service not found. Deploying for the first time..."
+          gcloud run deploy like-her-frontend \
+            --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-frontend:latest \
+            --region=asia-northeast1 --platform=managed \
+            --allow-unauthenticated --quiet
+        fi
 
-    - name: Deploy like-her-scheduler to Cloud Run
+    - name: Deploy like-her-scheduler
       run: |
-        gcloud run deploy like-her-scheduler \
-          --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest \
-          --platform=managed \
-          --region=asia-northeast1
+        if gcloud run services describe like-her-scheduler --region=asia-northeast1 --platform=managed > /dev/null 2>&1; then
+          echo "Service exists. Updating container..."
+          gcloud run services update-container like-her-scheduler \
+            --container-image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest \
+            --region=asia-northeast1 --platform=managed --quiet
+        else
+          echo "Service not found. Deploying for the first time..."
+          gcloud run deploy like-her-scheduler \
+            --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest \
+            --region=asia-northeast1 --platform=managed --quiet
+        fi
