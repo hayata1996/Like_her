@@ -7,6 +7,8 @@ import json
 from datetime import datetime
 import pandas as pd
 from pathlib import Path
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # Set up logging
 logging.basicConfig(
@@ -23,6 +25,19 @@ DATA_DIR = os.environ.get("DATA_DIR", "/data")
 os.makedirs(f"{DATA_DIR}/news", exist_ok=True)
 os.makedirs(f"{DATA_DIR}/papers", exist_ok=True)
 os.makedirs(f"{DATA_DIR}/stocks", exist_ok=True)
+
+def run_health_server():
+    """Simple HTTP server to respond on health checks"""
+    port = int(os.environ.get("PORT", 8000))  # default to 8000 instead of 8080
+    class HealthHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"OK")
+        def log_message(self, format, *args):
+            return
+    server = HTTPServer(("0.0.0.0", port), HealthHandler)
+    server.serve_forever()
 
 def fetch_ai_news():
     """Fetch AI news from the API and store the results"""
@@ -77,6 +92,10 @@ def fetch_stock_data():
 
 def main():
     """Main function to set up and run the scheduler"""
+    # Start health check server in background
+    threading.Thread(target=run_health_server, daemon=True).start()
+    logger.info("Health server running on port %s", os.environ.get("PORT", 8000))
+    
     logger.info("Starting scheduler")
     
     # Schedule daily news fetching at 3:00 AM
