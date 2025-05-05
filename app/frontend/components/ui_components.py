@@ -3,7 +3,7 @@ from datetime import datetime
 import base64
 
 # Custom CSS for terminal-like interface
-def load_css():
+def apply_custom_css():
     st.markdown("""
     <style>
         .main {

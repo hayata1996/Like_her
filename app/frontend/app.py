@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 from components.ui_components import (
-    set_page_configuration,
+    setup_page_config,
     apply_custom_css,
     display_terminal
 )
@@ -17,7 +17,7 @@ from components.stock_components import (
 VOICE_FEATURES_ENABLED = True
 
 # Set page configuration
-set_page_configuration()
+setup_page_config()
 
 # Apply custom CSS for terminal-like interface
 apply_custom_css()

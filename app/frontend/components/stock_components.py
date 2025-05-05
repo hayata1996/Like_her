@@ -3,18 +3,20 @@ import pandas as pd
 import plotly.graph_objects as go
 import requests
 import random
+import os
 from datetime import datetime, timedelta
 
 def get_stock_data():
     """Fetch stock data from API or fallback to generated data if API fails"""
-    api_url = "http://api:8000/stocks"
+    # APIのURLを環境変数から取得するか、デフォルト値を使用
+    api_url = os.environ.get("API_URL", "http://api:8000")
     
     try:
         # Get stock symbol from session state if available
         symbol = st.session_state.get('stock_symbol', '7974.T')  # Default to Nintendo
         
         # Make API request with the selected stock symbol
-        response = requests.get(f"{api_url}?symbol={symbol}")
+        response = requests.get(f"{api_url}/stocks?symbol={symbol}")
         
         if response.status_code == 200:
             data = response.json()
