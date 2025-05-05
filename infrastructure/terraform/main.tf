@@ -337,6 +337,5 @@ resource "google_cloud_run_v2_service_iam_binding" "frontend_user_access" {
 
   members = [
     "allUsers"
-#    "user:${var.allowed_user_email}"
   ]
 }
