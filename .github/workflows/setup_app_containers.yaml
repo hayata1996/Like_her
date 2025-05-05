@@ -48,3 +48,25 @@ jobs:
       run: |
         docker build -t asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest ./app/scheduler
         docker push asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest
+
+    - name: Deploy like-her-api to Cloud Run
+      run: |
+        gcloud run deploy like-her-api \
+          --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-api:latest \
+          --platform=managed \
+          --region=asia-northeast1
+
+    - name: Deploy like-her-frontend to Cloud Run
+      run: |
+        gcloud run deploy like-her-frontend \
+          --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-frontend:latest \
+          --platform=managed \
+          --region=asia-northeast1 \
+          --allow-unauthenticated
+
+    - name: Deploy like-her-scheduler to Cloud Run
+      run: |
+        gcloud run deploy like-her-scheduler \
+          --image=asia-northeast1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/like-her/like-her-scheduler:latest \
+          --platform=managed \
+          --region=asia-northeast1
