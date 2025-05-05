@@ -2,9 +2,7 @@ name: Setup Cloud Resources
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'infrastructure/**'  # Trigger only when infra code changes
+    branches: [main] # Trigger only when infra code changes
 
 jobs:
   setup-resources:
