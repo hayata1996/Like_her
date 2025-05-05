@@ -6,3 +6,7 @@ requests==2.31.0
 python-dotenv==1.0.0
 pydub==0.25.1
 websocket-client==1.6.1
+mplfinance==0.12.10b0
+yfinance==0.2.33
+matplotlib==3.8.2
+pandas==2.1.4

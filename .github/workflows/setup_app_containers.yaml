@@ -1,6 +1,9 @@
 name: Deploy Application
 
 on:
+  push:
+    branches:
+      - main
   workflow_run:
     workflows: ["Setup Cloud Resources"]  # ←1つ目のworkflowの「name」と一致させる
     types:

@@ -220,30 +220,56 @@ async def get_health_data(user_id: str = "default_user"):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/stocks")
-async def get_stock_data():
+async def get_stock_data(symbol: str = "7974.T", period: str = "1mo"):
     try:
-        # In production, this would fetch real stock data
-        # For now, generate random data
+        # Use yfinance to get real stock data
+        stock = yf.Ticker(symbol)
+        hist = stock.history(period=period)
         
-        # Create date range for the past 30 days
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=30)
-        date_range = pd.date_range(start=start_date, end=end_date)
+        # Reset index to make Date a column
+        hist.reset_index(inplace=True)
         
-        # Generate random stock data
-        values = np.cumsum(np.random.normal(0, 1, len(date_range))) + 100
+        # Convert datetime to string for JSON serialization
+        hist['Date'] = hist['Date'].dt.strftime('%Y-%m-%d')
+        
+        # Add moving averages
+        hist['MA5'] = hist['Close'].rolling(window=5).mean()
+        hist['MA20'] = hist['Close'].rolling(window=20).mean()
+        
+        # Get company name
+        info = stock.info
+        company_name = info.get('shortName', symbol)
         
         # Convert to dict for JSON response
         data = {
-            "dates": [d.strftime('%Y-%m-%d') for d in date_range],
-            "values": values.tolist(),
-            "symbol": "AI_INDEX",
-            "name": "AI Industry Index"
+            "dates": hist['Date'].tolist(),
+            "open": hist['Open'].tolist(),
+            "high": hist['High'].tolist(),
+            "low": hist['Low'].tolist(),
+            "close": hist['Close'].tolist(),
+            "volume": hist['Volume'].tolist(),
+            "ma5": hist['MA5'].tolist(),
+            "ma20": hist['MA20'].tolist(),
+            "symbol": symbol,
+            "name": company_name
         }
+        
+        # Log the successful data fetch
+        now = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_file = f"{DATA_DIR}/stocks/fetch_log_{now}.json"
+        with open(log_file, "w") as f:
+            json.dump({"timestamp": now, "symbol": symbol, "status": "success"}, f)
         
         return data
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")
+        
+        # Log the error
+        now = datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_file = f"{DATA_DIR}/stocks/fetch_log_{now}.json"
+        with open(log_file, "w") as f:
+            json.dump({"timestamp": now, "symbol": symbol, "status": "error", "message": str(e)}, f)
+        
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/tasks/fetch-news")
