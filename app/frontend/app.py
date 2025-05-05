@@ -367,7 +367,7 @@ def get_ai_news():
 st.title("Like Her - Your Personal AI Assistant")
 
 # Create two columns for the layout
-col1, col2 = st.columns([1, 1])
+col1, col2 = st.columns([1, 2])
 
 with col1:
     # Display the terminal-like conversation interface
