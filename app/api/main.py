@@ -254,22 +254,9 @@ async def get_stock_data(symbol: str = "7974.T", period: str = "1mo"):
             "name": company_name
         }
         
-        # Log the successful data fetch
-        now = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_file = f"{DATA_DIR}/stocks/fetch_log_{now}.json"
-        with open(log_file, "w") as f:
-            json.dump({"timestamp": now, "symbol": symbol, "status": "success"}, f)
-        
         return data
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")
-        
-        # Log the error
-        now = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_file = f"{DATA_DIR}/stocks/fetch_log_{now}.json"
-        with open(log_file, "w") as f:
-            json.dump({"timestamp": now, "symbol": symbol, "status": "error", "message": str(e)}, f)
-        
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/tasks/fetch-news")
