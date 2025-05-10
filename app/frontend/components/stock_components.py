@@ -42,7 +42,7 @@ def get_stock_data():
 def display_stock_chart():
     """Display stock chart with input controls"""
     st.subheader("Stock Price Analysis")
-    
+
     # Stock symbol input
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -52,14 +52,15 @@ def display_stock_chart():
     with col2:
         st.session_state['stock_symbol'] = symbol
         st.button("Refresh Data", on_click=lambda: st.session_state.update({'refresh_stocks': True}))
-    
+
     # Fetch stock data
     try:
         df = get_stock_data()
+        st.write(f"Fetched data for {symbol}: {df.head()}")
     except Exception as e:
         st.error(f"Error fetching stock data: {e}")
         return
-    
+
     # Create candlestick chart
     fig = go.Figure(data=[go.Candlestick(
         x=df['Date'],
