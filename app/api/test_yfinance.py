@@ -55,7 +55,6 @@ def main(symbol):
             "Symbol": symbol,
             "Name": company_name
         }
-        print(data)
         return data
     
     except Exception as e:
@@ -81,6 +80,7 @@ def get_stock_data(symbol):
     
     # Add symbol information
     df['Symbol'] = symbol
+    print(f"Fetched data for {symbol}: {df.head()}")
     
     return df
 
@@ -107,6 +107,8 @@ def display_stock_chart():
     except Exception as e:
         st.error(f"Error fetching stock data: {e}")
         return
+    
+    print(f"Fetched data for df['Date']: {df['Date'].head()}")
     
     # Create candlestick chart
     fig = go.Figure(data=[go.Candlestick(

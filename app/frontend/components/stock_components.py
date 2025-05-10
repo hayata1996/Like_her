@@ -29,6 +29,7 @@ def get_stock_data():
             
             # Add symbol information
             df['Symbol'] = symbol
+            print(f"Fetched data for {symbol}: {df.head()}")
             
             return df
         else:
