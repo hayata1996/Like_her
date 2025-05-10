@@ -218,10 +218,12 @@ async def get_health_data(user_id: str = "default_user"):
 @app.get("/stocks")
 async def get_stock_data(symbol: str = "7974.T", period: str = "1mo"):
     # Fetch and process stock data
+    logger.info(f"Fetching stock data for symbol: {symbol} with period: {period}")
     try:
         # Use yfinance to get real stock data
         stock = yf.Ticker(symbol)
         hist = stock.history(period=period)
+        logger.info(f"Fetched stock data for {symbol}: {hist.head()}")
 
         # Reset index to make date a column
         hist.reset_index(inplace=True)
@@ -250,6 +252,7 @@ async def get_stock_data(symbol: str = "7974.T", period: str = "1mo"):
             "Symbol": symbol,
             "Name": company_name
         }
+        logger.info(f"Fetched stock data for {symbol}: {data}")
         return data
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")
