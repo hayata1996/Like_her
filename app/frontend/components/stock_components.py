@@ -5,6 +5,11 @@ import requests
 import random
 import os
 from datetime import datetime, timedelta
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def get_stock_data():
     """Fetch stock data from API or fallback to generated data if API fails"""
@@ -22,7 +27,8 @@ def get_stock_data():
             data = response.json()
             
             # Convert to DataFrame
-            df = pd.DataFrame(data['data'])
+            df = pd.DataFrame(data)
+            logger.info(f"Fetched data for {symbol}: {df.head()}")
             
             # Ensure proper date format
             df['Date'] = pd.to_datetime(df['Date'])

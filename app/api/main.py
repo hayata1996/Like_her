@@ -235,6 +235,9 @@ async def get_stock_data(symbol: str = "7974.T", period: str = "1mo"):
         hist['MA5'] = hist['Close'].rolling(window=5).mean()
         hist['MA20'] = hist['Close'].rolling(window=20).mean()
 
+        # NaNやinf/-infをNoneに変換
+        hist = hist.replace([float('inf'), float('-inf')], None).fillna(value=None)
+
         # Get company name
         info = stock.info
         company_name = info.get('shortName', symbol)
