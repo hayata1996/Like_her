@@ -25,4 +25,6 @@ ENV PORT=8080
 EXPOSE ${PORT}
 
 # Run the Streamlit app with the PORT environment variable
-CMD ["streamlit", "run", "app.py", "--server.port=${PORT}", "--server.address=0.0.0.0"]
+# CMD ["streamlit", "run", "app.py", "--server.port=${PORT}", "--server.address=0.0.0.0"]
+# 上記の記法だと${PORT}が展開されないので、以下のように修正
+CMD streamlit run app.py --server.port=${PORT} --server.address=0.0.0.0

@@ -141,7 +141,7 @@ def display_stock_chart():
     fig.update_layout(
         title=f"{df['Symbol'].iloc[0]} Stock Price",
         xaxis_title='date',
-        yaxis_title='Price (¥)',
+        yaxis_title='Price ()',
         plot_bgcolor='#1E1E1E',
         paper_bgcolor='#1E1E1E',
         font=dict(color='#00FF00'),
@@ -170,11 +170,11 @@ def display_stock_chart():
         
         **Latest date:** {latest_date.strftime('%Y-%m-%d')}
         
-        **Latest Price:** ¥{latest_data['Close']:,.2f}
+        **Latest Price:** {latest_data['Close']:,.2f}
         
         **Change:** {(latest_data['Close'] - latest_data['Open']) / latest_data['Open'] * 100:.2f}%
         
-        **30-day Range:** ¥{df['Low'].min():,.2f} - ¥{df['High'].max():,.2f}
+        **30-day Range:** {df['Low'].min():,.2f} - {df['High'].max():,.2f}
         """)
 
 
