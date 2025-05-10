@@ -1,17 +1,13 @@
+import os
+import logging
+import random
+import time
+from datetime import datetime
+from typing import List
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import os
-import json
-import logging
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
 import yfinance as yf
-import requests
-from typing import List, Dict, Any, Optional
-import random
-import time
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -221,40 +217,25 @@ async def get_health_data(user_id: str = "default_user"):
 
 @app.get("/stocks")
 async def get_stock_data(symbol: str = "7974.T", period: str = "1mo"):
+    # Fetch and process stock data
     try:
-        # Use yfinance to get real stock data
         stock = yf.Ticker(symbol)
         hist = stock.history(period=period)
-        
-        # Reset index to make Date a column
         hist.reset_index(inplace=True)
-        
-        # Convert datetime to string for JSON serialization
+        # Format Date and compute moving averages
         hist['Date'] = hist['Date'].dt.strftime('%Y-%m-%d')
-        
-        # Add moving averages
         hist['MA5'] = hist['Close'].rolling(window=5).mean()
         hist['MA20'] = hist['Close'].rolling(window=20).mean()
-        
-        # Get company name
+        # Company name
         info = stock.info
         company_name = info.get('shortName', symbol)
-        
-        # Convert to dict for JSON response
-        data = {
-            "dates": hist['Date'].tolist(),
-            "open": hist['Open'].tolist(),
-            "high": hist['High'].tolist(),
-            "low": hist['Low'].tolist(),
-            "close": hist['Close'].tolist(),
-            "volume": hist['Volume'].tolist(),
-            "ma5": hist['MA5'].tolist(),
-            "ma20": hist['MA20'].tolist(),
-            "symbol": symbol,
-            "name": company_name
-        }
-        
-        return data
+        # Append symbol and name to each record
+        hist['Symbol'] = symbol
+        hist['Name'] = company_name
+        # Build list of records
+        records = hist[['Date', 'Open', 'High', 'Low', 'Close', 'Volume',
+                        'MA5', 'MA20', 'Symbol', 'Name']].to_dict(orient='records')
+        return {"data": records}
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
