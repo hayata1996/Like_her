@@ -124,6 +124,10 @@ resource "google_cloud_run_v2_service" "api" {
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/like-her/like-her-api:latest"
       
+      ports {
+        container_port = 8080
+      }
+      
       resources {
         limits = {
           cpu    = "1000m"
@@ -187,6 +191,10 @@ resource "google_cloud_run_v2_service" "frontend" {
     
     containers {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/like-her/like-her-frontend:latest"
+      
+      ports {
+        container_port = 8080
+      }
       
       resources {
         limits = {

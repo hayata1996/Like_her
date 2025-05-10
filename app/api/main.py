@@ -280,7 +280,7 @@ if __name__ == "__main__":
     logger.info(f"Mock responses: {USE_MOCK_RESPONSES}")
     
     # Get the port from environment variable
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 8080))
     logger.info(f"Port configuration: Using port {port} (from environment: {os.environ.get('PORT')})")
     
     try:

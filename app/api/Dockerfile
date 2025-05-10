@@ -28,4 +28,4 @@ ENV ENVIRONMENT=local
 EXPOSE ${PORT}
 
 # Run the API server
-CMD python -u main.py
+CMD ["python", "-u", "main.py"]

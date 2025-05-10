@@ -26,7 +26,7 @@ apply_custom_css()
 initialize_conversation()
 
 # API URL (default for local development, can be overridden by environment)
-API_URL = os.environ.get("API_URL", "http://localhost:8000")
+API_URL = os.environ.get("API_URL", "http://localhost:8080")
 
 
 # Function to get AI news (placeholder)

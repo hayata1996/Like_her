@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 # APIのURLを環境変数から取得するか、デフォルト値を使用
-API_URL = os.environ.get("API_URL", "http://api:8000")
+API_URL = os.environ.get("API_URL", "http://api:8080")
 
 def initialize_conversation():
     """Initialize session state for conversation history"""

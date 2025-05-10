@@ -11,7 +11,7 @@ services:
       - ./app/frontend:/app
       - ./data:/data
     environment:
-      - API_URL=http://api:8000  # Updated to match the actual API port
+      - API_URL=http://api:8080  # Updated to match the actual API port
     depends_on:
       - api
     restart: unless-stopped
@@ -21,13 +21,13 @@ services:
       context: ./app/api
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"  # Your API is actually running on port 8000 inside the container
+      - "8080:8080"  # Your API is actually running on port 8080 inside the container
     volumes:
       - ./app/api:/app
       - ./data:/data
     environment:
       - MODEL_PATH=/data/models
-      - PORT=8000  # The API is using port 8000
+      - PORT=8080  # The API is using port 8080
       - ENVIRONMENT=local
       - USE_MOCK_RESPONSES=true
       # These will be ignored in mock mode, but kept for future real integration
@@ -44,7 +44,7 @@ services:
       - ./app/scheduler:/app
       - ./data:/data
     environment:
-      - API_URL=http://api:8000  # Updated to match the actual API port
+      - API_URL=http://api:8080  # Updated to match the actual API port
     depends_on:
       - api
     restart: unless-stopped

@@ -18,7 +18,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration
-API_URL = os.environ.get("API_URL", "http://api:8000")
+API_URL = os.environ.get("API_URL", "http://api:8080")
 DATA_DIR = os.environ.get("DATA_DIR", "/data")
 
 # Ensure data directories exist
@@ -28,7 +28,7 @@ os.makedirs(f"{DATA_DIR}/stocks", exist_ok=True)
 
 def run_health_server():
     """Simple HTTP server to respond on health checks"""
-    port = int(os.environ.get("PORT", 8000))  # default to 8000 instead of 8080
+    port = int(os.environ.get("PORT", 8080))  # default to 8080 instead of 8080
     class HealthHandler(BaseHTTPRequestHandler):
         def do_GET(self):
             self.send_response(200)
@@ -94,7 +94,7 @@ def main():
     """Main function to set up and run the scheduler"""
     # Start health check server in background
     threading.Thread(target=run_health_server, daemon=True).start()
-    logger.info("Health server running on port %s", os.environ.get("PORT", 8000))
+    logger.info("Health server running on port %s", os.environ.get("PORT", 8080))
     
     logger.info("Starting scheduler")
     

@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 def get_stock_data():
     """Fetch stock data from API or fallback to generated data if API fails"""
     # APIのURLを環境変数から取得するか、デフォルト値を使用
-    api_url = os.environ.get("API_URL", "http://api:8000")
+    api_url = os.environ.get("API_URL", "http://api:8080")
     
     try:
         # Get stock symbol from session state if available

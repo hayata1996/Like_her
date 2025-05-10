@@ -51,7 +51,7 @@ The application consists of three main components:
 
 3. Access the application:
    - Frontend: http://localhost:8501
-   - API: http://localhost:8000
+   - API: http://localhost:8080
 
 ## Deployment
 
