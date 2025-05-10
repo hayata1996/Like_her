@@ -14,5 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application code
 COPY . .
 
+# Use the PORT environment variable provided by Cloud Run
+ENV PORT=8080
+
 # Default command runs the scheduler
 CMD ["python", "scheduler.py"]
