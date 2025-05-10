@@ -219,23 +219,38 @@ async def get_health_data(user_id: str = "default_user"):
 async def get_stock_data(symbol: str = "7974.T", period: str = "1mo"):
     # Fetch and process stock data
     try:
+        # Use yfinance to get real stock data
         stock = yf.Ticker(symbol)
         hist = stock.history(period=period)
+
+        # Reset index to make date a column
         hist.reset_index(inplace=True)
-        # Format Date and compute moving averages
+
+        # Convert datetime to string for JSON serialization
         hist['Date'] = hist['Date'].dt.strftime('%Y-%m-%d')
+
+        # Add moving averages
         hist['MA5'] = hist['Close'].rolling(window=5).mean()
         hist['MA20'] = hist['Close'].rolling(window=20).mean()
-        # Company name
+
+        # Get company name
         info = stock.info
         company_name = info.get('shortName', symbol)
-        # Append symbol and name to each record
-        hist['Symbol'] = symbol
-        hist['Name'] = company_name
-        # Build list of records
-        records = hist[['Date', 'Open', 'High', 'Low', 'Close', 'Volume',
-                        'MA5', 'MA20', 'Symbol', 'Name']].to_dict(orient='records')
-        return {"data": records}
+
+        # Convert to dict for JSON response
+        data = {
+            "Date": hist['Date'].tolist(),
+            "Open": hist['Open'].tolist(),
+            "High": hist['High'].tolist(),
+            "Low": hist['Low'].tolist(),
+            "Close": hist['Close'].tolist(),
+            "Volume": hist['Volume'].tolist(),
+            "MA5": hist['MA5'].tolist(),
+            "MA20": hist['MA20'].tolist(),
+            "Symbol": symbol,
+            "Name": company_name
+        }
+        return data
     except Exception as e:
         logger.error(f"Error fetching stock data: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
