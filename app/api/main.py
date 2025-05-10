@@ -231,12 +231,12 @@ async def get_stock_data(symbol: str = "7974.T", period: str = "1mo"):
         # Convert datetime to string for JSON serialization
         hist['Date'] = hist['Date'].dt.strftime('%Y-%m-%d')
 
-        # Add moving averages
-        hist['MA5'] = hist['Close'].rolling(window=5).mean()
-        hist['MA20'] = hist['Close'].rolling(window=20).mean()
+        # # Add moving averages
+        # hist['MA5'] = hist['Close'].rolling(window=5).mean()
+        # hist['MA20'] = hist['Close'].rolling(window=20).mean()
 
-        # Replace inf/-inf with 0 and fill NaNs with 0 for JSON compliance
-        hist = hist.replace([float('inf'), float('-inf')], 0).fillna(0)
+        # # Replace inf/-inf with 0 and fill NaNs with 0 for JSON compliance
+        # hist = hist.replace([float('inf'), float('-inf')], 0).fillna(0)
 
         # Get company name
         info = stock.info
@@ -250,8 +250,8 @@ async def get_stock_data(symbol: str = "7974.T", period: str = "1mo"):
             "Low": hist['Low'].tolist(),
             "Close": hist['Close'].tolist(),
             "Volume": hist['Volume'].tolist(),
-            "MA5": hist['MA5'].tolist(),
-            "MA20": hist['MA20'].tolist(),
+            # "MA5": hist['MA5'].tolist(),
+            # "MA20": hist['MA20'].tolist(),
             "Symbol": symbol,
             "Name": company_name
         }

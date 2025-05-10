@@ -78,24 +78,24 @@ def display_stock_chart():
         name='Price'
     )])
     
-    # Add moving averages if they exist
-    if 'MA5' in df.columns:
-        fig.add_trace(go.Scatter(
-            x=df['Date'], 
-            y=df['MA5'], 
-            mode='lines',
-            line=dict(color='blue', width=1),
-            name='MA5'
-        ))
+    # # Add moving averages if they exist
+    # if 'MA5' in df.columns:
+    #     fig.add_trace(go.Scatter(
+    #         x=df['Date'], 
+    #         y=df['MA5'], 
+    #         mode='lines',
+    #         line=dict(color='blue', width=1),
+    #         name='MA5'
+    #     ))
     
-    if 'MA20' in df.columns:
-        fig.add_trace(go.Scatter(
-            x=df['Date'], 
-            y=df['MA20'], 
-            mode='lines',
-            line=dict(color='orange', width=1),
-            name='MA20'
-        ))
+    # if 'MA20' in df.columns:
+    #     fig.add_trace(go.Scatter(
+    #         x=df['Date'], 
+    #         y=df['MA20'], 
+    #         mode='lines',
+    #         line=dict(color='orange', width=1),
+    #         name='MA20'
+    #     ))
     
     # Update layout
     fig.update_layout(
