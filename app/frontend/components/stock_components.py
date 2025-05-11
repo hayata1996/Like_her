@@ -63,7 +63,6 @@ def display_stock_chart():
     # Fetch stock data
     try:
         df = get_stock_data()
-        st.write(f"Fetched data for {symbol}: {df.head()}")
     except Exception as e:
         st.error(f"Error fetching stock data: {e}")
         return

@@ -347,3 +347,10 @@ resource "google_cloud_run_v2_service_iam_binding" "frontend_user_access" {
     "allUsers"
   ]
 }
+
+
+resource "google_project_iam_member" "agent_access" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:admin-for-like-her@for-like-her.iam.gserviceaccount.com"
+}

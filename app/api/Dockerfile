@@ -21,7 +21,6 @@ RUN mkdir -p /data/models
 # Set environment variables for local development
 ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
-ENV USE_MOCK_RESPONSES=true
 ENV ENVIRONMENT=local
 
 # Expose the port

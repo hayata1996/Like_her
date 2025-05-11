@@ -16,6 +16,9 @@ def initialize_conversation():
         greeting = f"[{current_time}] System initialized. Hello, I'm your personal AI assistant."
         st.session_state.system_message = greeting
         st.session_state.conversation.append({"role": "assistant", "content": greeting})
+    # Initialize user_id in session state
+    if 'user_id' not in st.session_state:
+        st.session_state.user_id = 'default_user'
 
 def chat_with_ai(user_input):
     """Process user input and get AI response"""
@@ -31,6 +34,7 @@ def chat_with_ai(user_input):
             f"{API_URL}/chat",
             json={
                 "message": user_input,
+                "user_id": st.session_state.user_id,
                 "history": st.session_state.conversation[:-1]  # Exclude the latest user message
             }
         )
