@@ -4,60 +4,62 @@ import base64
 
 # Custom CSS for terminal-like interface
 def apply_custom_css():
-    st.markdown("""
-    <style>
-        .main {
-            background-color: #0E1117;
-            color: #00FF00;
-        }
-        .stTextInput>div>div>input {
-            background-color: #1E1E1E;
-            color: #00FF00;
-            font-family: 'Courier New', Courier, monospace;
-            border: 1px solid #00FF00;
-        }
-        .stButton>button {
-            background-color: #1E1E1E;
-            color: #00FF00;
-            font-family: 'Courier New', Courier, monospace;
-            border: 1px solid #00FF00;
-        }
-        .terminal-text {
-            background-color: #1E1E1E;
-            color: #00FF00;
-            font-family: 'Courier New', Courier, monospace;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #00FF00;
-            overflow-y: auto;
-            height: 400px;
-        }
-        .chat-message {
-            padding: 5px;
-            border-radius: 3px;
-            margin-bottom: 5px;
-            font-family: 'Courier New', Courier, monospace;
-        }
-        .user-message {
-            background-color: #2E2E2E;
-            margin-left: 20px;
-        }
-        .assistant-message {
-            background-color: #1E1E1E;
-            margin-right: 20px;
-            border-left: 2px solid #00FF00;
-        }
-        .emphasis {
-            color: #FF00FF;
-            font-weight: bold;
-        }
-        .stPlotlyChart {
-            background-color: #1E1E1E;
-            border: 1px solid #00FF00;
-            border-radius: 5px;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+    if 'css_applied' not in st.session_state:
+        st.markdown("""
+        <style>
+            .main {
+                background-color: #0E1117;
+                color: #00FF00;
+            }
+            .stTextInput>div>div>input {
+                background-color: #1E1E1E;
+                color: #00FF00;
+                font-family: 'Courier New', Courier, monospace;
+                border: 1px solid #00FF00;
+            }
+            .stButton>button {
+                background-color: #1E1E1E;
+                color: #00FF00;
+                font-family: 'Courier New', Courier, monospace;
+                border: 1px solid #00FF00;
+            }
+            .terminal-text {
+                background-color: #1E1E1E;
+                color: #00FF00;
+                font-family: 'Courier New', Courier, monospace;
+                padding: 10px;
+                border-radius: 5px;
+                border: 1px solid #00FF00;
+                overflow-y: auto;
+                height: 400px;
+            }
+            .chat-message {
+                padding: 5px;
+                border-radius: 3px;
+                margin-bottom: 5px;
+                font-family: 'Courier New', Courier, monospace;
+            }
+            .user-message {
+                background-color: #2E2E2E;
+                margin-left: 20px;
+            }
+            .assistant-message {
+                background-color: #1E1E1E;
+                margin-right: 20px;
+                border-left: 2px solid #00FF00;
+            }
+            .emphasis {
+                color: #FF00FF;
+                font-weight: bold;
+            }
+            .stPlotlyChart {
+                background-color: #1E1E1E;
+                border: 1px solid #00FF00;
+                border-radius: 5px;
+            }
+        </style>
+        """, unsafe_allow_html=True)
+        st.session_state.css_applied = True
 
 def setup_page_config():
     """Configure the Streamlit page settings"""

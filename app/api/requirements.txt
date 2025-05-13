@@ -12,4 +12,4 @@ google-api-python-client==2.107.0
 newsapi-python==0.2.7
 google-cloud-aiplatform>=1.35.0
 google-cloud-storage>=2.10.0
-vertexai-preview>=0.1.0
+vertexai>=0.0.1
