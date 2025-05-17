@@ -1,13 +1,12 @@
 import os
 import logging
-import random
-import time
 import json
 from datetime import datetime
 from typing import List, Optional
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from google.cloud import aiplatform
+from google.cloud import firestore
 from pydantic import BaseModel
 import yfinance as yf
 from vertexai.preview.agent import AgentBuilder
@@ -38,6 +37,11 @@ MODEL_PATH = os.environ.get("MODEL_PATH", "/data/models")
 PROJECT_ID = os.environ.get("PROJECT_ID")
 LOCATION = os.environ.get("LOCATION", "us-central1")
 AGENT_ID = os.environ.get("AGENT_ID")
+if AGENT_ID and not AGENT_ID.startswith("projects/"):
+    # convert short ID into full resource name
+    full_agent = f"projects/{PROJECT_ID}/locations/{LOCATION}/agents/{AGENT_ID}"
+    logger.info(f"Normalizing AGENT_ID short form '{AGENT_ID}' to full resource name: {full_agent}")
+    AGENT_ID = full_agent
 
 # Initialize AI Platform
 try:
@@ -52,6 +56,14 @@ os.makedirs(f"{DATA_DIR}/news", exist_ok=True)
 os.makedirs(f"{DATA_DIR}/health", exist_ok=True)
 os.makedirs(f"{DATA_DIR}/stocks", exist_ok=True)
 os.makedirs(MODEL_PATH, exist_ok=True)
+
+# Firestore client initialization
+FIRESTORE_HOST = os.environ.get("FIRESTORE_EMULATOR_HOST")
+if FIRESTORE_HOST:
+    firestore_client = firestore.Client(project=PROJECT_ID)
+else:
+    firestore_client = firestore.Client()
+logger.info(f"Using Firestore host: {FIRESTORE_HOST or 'production'}")
 
 # API Models
 class ChatMessage(BaseModel):
@@ -78,19 +90,21 @@ class HealthData(BaseModel):
 
 # AI interaction function - always use Vertex AI Agent Builder
 def get_llm_response(message: str, history: List[dict], user_id: str) -> str:
-    """Get response from AI model"""
-    # build and run Vertex AI Agent
-    agent = AgentBuilder()\
-        .set_agent_id(AGENT_ID)\
-        .set_chat_model("chat-bison@001")\
-        .build()
-    # prepare history messages
-    msgs = []
-    for item in history or []:
-        msgs.append({"author": item.get("role"), "content": item.get("content")})
-    msgs.append({"author": "user", "content": message})
-    result = agent.run(msgs)
-    return result.content
+    """Get response from Vertex AI Agent Builder with error handling"""
+    try:
+        agent = AgentBuilder()\
+            .set_agent_id(AGENT_ID)\
+            .set_chat_model("chat-bison@001")\
+            .build()
+
+        msgs = [{"author": item.get("role"), "content": item.get("content")} for item in history or []]
+        msgs.append({"author": "user", "content": message})
+
+        result = agent.run(msgs)
+        return result.content
+    except Exception as e:
+        logger.error(f"Agent call failed for user {user_id}: {str(e)}")
+        return "Sorry, I couldn't process your request."
 
 # API Routes
 @app.get("/")
@@ -208,6 +222,16 @@ async def get_stock_data(symbol: str = "7974.T", period: str = "1mo"):
             "Symbol": symbol,
             "Name": company_name
         }
+        # Persist to Firestore
+        try:
+            firestore_client.collection("stocks").add({
+                "symbol": symbol,
+                "timestamp": datetime.utcnow().isoformat(),
+                "data": data
+            })
+            logger.info(f"Stored stock data for {symbol} to Firestore")
+        except Exception as e:
+            logger.error(f"Error writing stock data to Firestore: {e}")
         logger.info(f"Fetched stock data for {symbol}: {data}")
         return data
     except Exception as e:

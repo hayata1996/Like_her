@@ -14,6 +14,13 @@ provider "google" {
   credentials = var.google_credentials
 }
 
+# Enable Firestore API
+resource "google_project_service" "firestore_api" {
+  project = var.project_id
+  service = "firestore.googleapis.com"
+  disable_on_destroy = false
+}
+
 # Artifact Registry repository defined as a resource (not data source)
 resource "google_artifact_registry_repository" "like-her-repo" {
   location      = var.region
@@ -348,9 +355,31 @@ resource "google_cloud_run_v2_service_iam_binding" "frontend_user_access" {
   ]
 }
 
-
 resource "google_project_iam_member" "agent_access" {
   project = var.project_id
   role    = "roles/aiplatform.user"
   member  = "serviceAccount:admin-for-like-her@for-like-her.iam.gserviceaccount.com"
+}
+
+# Firestore database
+resource "google_firestore_database" "like_her_db" {
+  project     = var.project_id
+  name        = "(default)"
+  location_id = var.region
+  type        = "FIRESTORE_NATIVE"
+}
+
+# Grant the service account permission to read/write Firestore
+data "google_iam_policy" "firestore_user_policy" {
+  binding {
+    role = "roles/datastore.user"
+    members = [
+      "serviceAccount:admin-for-like-her@for-like-her.iam.gserviceaccount.com"
+    ]
+  }
+}
+
+resource "google_project_iam_policy" "firestore_user_binding" {
+  project     = var.project_id
+  policy_data = data.google_iam_policy.firestore_user_policy.policy_data
 }

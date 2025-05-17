@@ -14,6 +14,8 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+    networks:
+      - backend_net
 
   api:
     image: like-her-api
@@ -32,7 +34,10 @@ services:
       - PROJECT_ID=local-dev
       - LOCATION=us-central1
       - AGENT_ID=local-dev-agent
+      - FIRESTORE_EMULATOR_HOST=firestore-emulator:8080
     restart: unless-stopped
+    networks:
+      - backend_net
 
   scheduler:
     image: like-her-scheduler
@@ -47,3 +52,17 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+    networks:
+      - backend_net
+
+  firestore-emulator:
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:latest
+    command: gcloud beta emulators firestore start --host-port=0.0.0.0:8080
+    ports:
+      - "8080:8080"
+    networks:
+      - backend_net
+
+networks:
+  backend_net:
+    driver: bridge
