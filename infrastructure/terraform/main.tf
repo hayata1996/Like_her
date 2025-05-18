@@ -369,17 +369,9 @@ resource "google_firestore_database" "like_her_db" {
   type        = "FIRESTORE_NATIVE"
 }
 
-# Grant the service account permission to read/write Firestore
-data "google_iam_policy" "firestore_user_policy" {
-  binding {
-    role = "roles/datastore.user"
-    members = [
-      "serviceAccount:admin-for-like-her@for-like-her.iam.gserviceaccount.com"
-    ]
-  }
-}
-
-resource "google_project_iam_policy" "firestore_user_binding" {
-  project     = var.project_id
-  policy_data = data.google_iam_policy.firestore_user_policy.policy_data
+# IAM binding for Firestore access (avoid overwriting entire project IAM)
+resource "google_project_iam_member" "firestore_user_binding" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:admin-for-like-her@for-like-her.iam.gserviceaccount.com"
 }
